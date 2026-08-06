@@ -26,6 +26,8 @@
   function render(phaseData) {
     var main = document.getElementById("main-content");
     if (!main || !phaseData) return;
+    // Locked phases show the gate instead of their tasks (covers direct URLs).
+    if (window.Nav && Nav.guardPhase && Nav.guardPhase(phaseData.id, window.ALL_PHASES_MAP, "")) return;
     _last = phaseData;
 
     var taskIds = phaseData.tasks.map(function (t) { return t.id; });

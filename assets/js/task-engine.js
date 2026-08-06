@@ -51,6 +51,8 @@
     mcResults = [];
     var main = document.getElementById("main-content");
     if (!main) return;
+    // Task pages sit one folder deep, hence the "../" base.
+    if (window.Nav && Nav.guardPhase && Nav.guardPhase(data.phaseId, window.ALL_PHASES_MAP, "../")) return;
 
     // start on the furthest-unlocked, not-yet-complete section
     current = "learn";

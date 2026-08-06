@@ -68,8 +68,15 @@
       if (locked) right = '<span class="lock">🔒</span>';
       else if (pct !== null) right = '<span class="pct">' + pct + '%</span>';
 
-      html += '<li><a class="' + cls + '" href="' + base + link.href + '">' +
-              '<span class="sb-ic">' + link.icon + '</span><span>' + link.label + '</span>' + right + '</a></li>';
+      // Locked phases render as a non-link <span> so they can't be clicked,
+      // tabbed to, opened in a new tab, or copied as a URL.
+      var inner = '<span class="sb-ic">' + link.icon + '</span><span>' + link.label + '</span>' + right;
+      if (locked) {
+        html += '<li><span class="' + cls + '" role="link" aria-disabled="true" ' +
+                'title="Finish the previous phase to unlock this one">' + inner + '</span></li>';
+      } else {
+        html += '<li><a class="' + cls + '" href="' + base + link.href + '">' + inner + '</a></li>';
+      }
     });
     html += '</ul>';
 
@@ -113,10 +120,44 @@
     if (pct) pct.textContent = g.percent + "%";
   }
 
+  /* ---------------------------------------------------------------
+     guardPhase — blocks a locked phase even when reached directly by
+     URL, bookmark, browser history, or a stale link. Called by every
+     phase and task page (see phase-engine / task-engine).
+     Shows a friendly "locked" panel instead of the content.
+     --------------------------------------------------------------- */
+  function guardPhase(phaseId, allPhasesMap, base) {
+    var map = allPhasesMap || _allPhasesMap || {};
+    if (!isPhaseLocked(phaseId, map)) return false;   // not locked: carry on
+
+    base = base || "";
+    var idx = PHASE_ORDER.indexOf(phaseId);
+    var prev = idx > 0 ? PHASE_ORDER[idx - 1] : null;
+    var prevLink = LINKS.filter(function (l) { return l.id === prev; })[0];
+    var prevLabel = prevLink ? prevLink.label : "the previous phase";
+    var prevHref = prevLink ? (base + prevLink.href) : (base + "index.html");
+    var pct = (prev && map[prev]) ? Progress.getPhaseProgress(prev, map[prev]).percent : 0;
+
+    var main = document.getElementById("main-content");
+    if (!main) return true;
+    main.innerHTML =
+      '<div class="wrap"><a class="breadcrumb" href="' + base + 'index.html">← Back to Trailhead</a>' +
+      '<div class="locked-gate">' +
+        '<div class="lg-ic">🔒</div>' +
+        '<h1 class="page-title">This phase is still locked</h1>' +
+        '<p class="page-sub">The expedition unlocks one phase at a time. Finish <b>' +
+          prevLabel + '</b> first — it\'s currently at ' + pct + '%.</p>' +
+        '<div class="btn-row"><a class="btn-primary" style="text-decoration:none;display:inline-block" href="' +
+          prevHref + '">Go to ' + prevLabel + '</a></div>' +
+      '</div></div>';
+    return true;   // caller should stop rendering
+  }
+
   window.Nav = {
     init: init,
     updateProgressBar: updateProgressBar,
     isPhaseLocked: isPhaseLocked,
+    guardPhase: guardPhase,
     PHASE_ORDER: PHASE_ORDER
   };
 })();

@@ -515,3 +515,18 @@ body::-webkit-scrollbar,
   height: 0;
   display: none;                /* Chrome, Safari, Edge */
 }
+
+/* ---------- Locked-phase gate (shown instead of content) ---------- */
+.locked-gate {
+  background: var(--color-card); border: 1px solid var(--color-line);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 46px 36px; text-align: center; margin-top: 20px;
+}
+.locked-gate .lg-ic { font-size: 44px; margin-bottom: 6px; }
+.locked-gate .page-title { margin-top: 0; }
+.locked-gate .page-sub { max-width: 52ch; margin: 0 auto 22px; }
+.locked-gate .btn-row { justify-content: center; }
+
+/* locked sidebar items are not links — kill pointer affordances */
+span.sb-link.locked { cursor: not-allowed; opacity: .75; user-select: none; }
+span.sb-link.locked:hover { background: none; color: #6c769e; }
