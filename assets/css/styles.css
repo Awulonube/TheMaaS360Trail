@@ -490,3 +490,28 @@ a.resource-card:hover { border-color: #3a4a8f; background: var(--color-card-hove
 .ce-opt input[type="radio"] { accent-color: var(--color-trail-green); width: 16px; height: 16px; flex: none; cursor: pointer; }
 .ce-opt .ce-in { flex: 1; }
 .ce-qadd-row { display: flex; gap: 8px; margin-top: 8px; }
+
+/* ---------- Hide scrollbars (scrolling still works) ----------
+   Applies to the page, the sidebar, the manager drawer, and the
+   horizontally-scrolling tables. Content remains fully reachable by
+   wheel, trackpad, touch, arrow keys, Page Up/Down and Home/End. */
+html, body,
+#sidebar,
+#main-content,
+.ce-body,
+.dash-scroll,
+.mgr-wrap {
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* legacy Edge/IE */
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#sidebar::-webkit-scrollbar,
+#main-content::-webkit-scrollbar,
+.ce-body::-webkit-scrollbar,
+.dash-scroll::-webkit-scrollbar,
+.mgr-wrap::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;                /* Chrome, Safari, Edge */
+}
