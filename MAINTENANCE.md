@@ -1,6 +1,6 @@
 # MaaS360 Expedition — Maintainer's Guide
 
-The one document to read before touching anything. Written for whoever runs
+The one document to read before touching anything. A visual companion with diagrams lives at **maintenance.html** (open it in the browser or from the hosted site). Written for whoever runs
 this site — today or three years from now with zero context.
 
 ---
