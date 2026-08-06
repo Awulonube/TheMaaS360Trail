@@ -182,9 +182,9 @@ save to the cloud database and **take precedence** over what's built from
 these Markdown files — per task, per section. A task edited in the browser
 shows the browser version until a manager clicks "Revert to built-in" on it.
 
-Rule of thumb: quick text tweaks, new learn cards, and toggling the practice
-embed → do it in the browser. Structural work, quiz changes, or bulk edits →
-do it here and rebuild.
+Rule of thumb: text tweaks, learn cards, practice steps, embed links, and
+quiz edits (questions, options, correct answers) → do it in the browser.
+New tasks, reordering tasks, or bulk edits → do it here and rebuild.
 
 ## Cautions
 

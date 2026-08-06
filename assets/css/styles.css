@@ -481,3 +481,12 @@ a.resource-card:hover { border-color: #3a4a8f; background: var(--color-card-hove
 .embed-open { display: inline-block; margin-top: 6px; font-size: 12.5px;
   color: var(--color-accent-blue); text-decoration: none; }
 .embed-open:hover { text-decoration: underline; }
+
+/* ---------- Quiz editing (in the manager drawer) ---------- */
+.ce-qtag { font-size: 11px; font-weight: 700; color: var(--color-summit-gold);
+  background: rgba(251,191,36,.12); border-radius: 999px; padding: 3px 10px; flex: none; }
+.ce-card-head .ce-qtag + .ce-card-btns { margin-left: auto; }
+.ce-opt { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.ce-opt input[type="radio"] { accent-color: var(--color-trail-green); width: 16px; height: 16px; flex: none; cursor: pointer; }
+.ce-opt .ce-in { flex: 1; }
+.ce-qadd-row { display: flex; gap: 8px; margin-top: 8px; }

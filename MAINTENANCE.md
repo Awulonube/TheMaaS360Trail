@@ -42,8 +42,8 @@ Either half can be replaced without touching the other.
 
 | Layer | Who uses it | What it's for | Where |
 |---|---|---|---|
-| **1. Browser editing** | Managers | Everyday content changes: reword text, add/remove Learn cards, practice steps, paste embed links | "✏️ Edit this task" on any task page |
-| **2. Content files** | Maintainer (or Claude) | Structural work: quizzes, new tasks, bulk edits | `content/*.md` → `node content/tools/build.js` |
+| **1. Browser editing** | Managers | Everyday content changes: text, Learn cards, practice steps, embed links, **and quizzes** (questions, options, correct answers) | "✏️ Edit this task" on any task page |
+| **2. Content files** | Maintainer (or Claude) | Structural work: new tasks, bulk edits, restructuring | `content/*.md` → `node content/tools/build.js` |
 | **3. Code** | Maintainer (or Claude) | Behavior: engines, cloud sync, dashboard | `assets/js/*.js`, page HTML |
 
 **Precedence:** browser edits (layer 1) are stored in the database and

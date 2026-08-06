@@ -48,6 +48,9 @@
       if (patch.apply.scenario != null) task.apply.scenario = patch.apply.scenario;
       if (patch.apply.isRealScenario != null) task.apply.isRealScenario = patch.apply.isRealScenario;
     }
+    if (patch.assess && patch.assess.questions) {
+      task.assess.questions = clone(patch.assess.questions);
+    }
   }
 
   function mergeAll() {
@@ -88,6 +91,7 @@
     wm = clone({ title: t.title, description: t.description, learn: t.learn,
                  practice: { iframePlaceholder: t.practice.iframePlaceholder !== false,
                              steps: t.practice.steps, embedUrl: t.practice.embedUrl || "" },
+                 assess: { questions: t.assess.questions },
                  apply: { scenario: t.apply.scenario } });
     drawDrawer();
   }
@@ -127,6 +131,12 @@
       '<input class="ce-in" id="ce-embed" value="'+esc(wm.practice.embedUrl)+'" placeholder="https://… (hosted video, walkthrough, or doc)">' +
       '<p class="hint" style="font-size:11.5px;margin:6px 0 0">Paste any hosted link — YouTube/Vimeo embed links, a Box/SharePoint doc, or an internal portal page. It displays inside the Practice tab. Tip: for YouTube use the <i>embed</i> form (youtube.com/embed/VIDEOID).</p>' +
       '<label class="ce-check"><input type="checkbox" id="ce-iframe"'+(wm.practice.iframePlaceholder?" checked":"")+'> Show the embed/placeholder section in Practice</label>' +
+      '<label class="ce-lbl">✅ Quiz (' + wm.assess.questions.length + ' questions, pass mark 70%)</label>' +
+      '<div id="ce-quiz">' + wm.assess.questions.map(quizCardHtml).join("") + '</div>' +
+      '<div class="ce-qadd-row">' +
+        '<button class="ce-add" id="ce-add-mc" style="width:auto;flex:1">＋ Multiple choice</button>' +
+        '<button class="ce-add" id="ce-add-text" style="width:auto;flex:1">＋ Written reflection</button>' +
+      '</div>' +
       '<label class="ce-lbl">🚀 Apply scenario</label>' +
       '<textarea class="ce-ta" rows="4" id="ce-apply">'+esc(wm.apply.scenario)+'</textarea>' +
       '<div class="ce-actions">' +
@@ -134,10 +144,39 @@
         '<button class="ce-revert" id="ce-revert">Revert to built-in</button>' +
       '</div>' +
       '<p class="save-status" id="ce-status"></p>' +
-      '<p class="hint" style="font-size:12px">Changes save to the cloud and appear for every user on their next page load. Quiz editing still lives in the content files — ask Claude for edits there.</p>' +
+      '<p class="hint" style="font-size:12px">Changes save to the cloud and appear for every user on their next page load.</p>' +
       '</div>';
     document.body.appendChild(d);
     wireDrawer(d);
+  }
+
+  // one quiz question card
+  function quizCardHtml(q, i) {
+    var head =
+      '<div class="ce-card-head">' +
+        '<span class="ce-qtag">' + (q.type === "text" ? "✍️ reflection" : "Q" + (i + 1)) + '</span>' +
+        '<span class="ce-card-btns">' +
+          '<button class="ce-mini" data-qup="' + i + '" title="Move up">↑</button>' +
+          '<button class="ce-mini" data-qdown="' + i + '" title="Move down">↓</button>' +
+          '<button class="ce-mini ce-del" data-qdel="' + i + '" title="Delete question">✕</button>' +
+        '</span>' +
+      '</div>' +
+      '<textarea class="ce-ta" rows="2" data-q-text="' + i + '" placeholder="Question text">' + esc(q.question) + '</textarea>';
+    if (q.type === "text") {
+      return '<div class="ce-card">' + head +
+        '<p class="hint" style="font-size:11.5px;margin:6px 0 0">Open answer — not auto-graded, the hire reflects in writing.</p></div>';
+    }
+    var opts = (q.options || []).map(function (opt, j) {
+      return '<div class="ce-opt">' +
+        '<input type="radio" name="ce-correct-' + i + '" value="' + j + '"' + (q.correct === j ? " checked" : "") + ' title="Mark as the correct answer">' +
+        '<input class="ce-in" data-q-opt="' + i + ':' + j + '" value="' + esc(opt) + '" placeholder="Answer option">' +
+        '<button class="ce-mini ce-del" data-odel="' + i + ':' + j + '" title="Remove option">✕</button>' +
+        '</div>';
+    }).join("");
+    return '<div class="ce-card">' + head + opts +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">' +
+      '<button class="ce-mini" data-oadd="' + i + '">＋ option</button>' +
+      '<span class="hint" style="font-size:11px;margin:0">⦿ = correct answer</span></div></div>';
   }
 
   function closeDrawer() {
@@ -153,12 +192,25 @@
     wm.practice.iframePlaceholder = document.getElementById("ce-iframe").checked;
     wm.practice.embedUrl = document.getElementById("ce-embed").value.trim();
     wm.apply.scenario = document.getElementById("ce-apply").value;
-    var i;
+    var i, j;
     for (i = 0; i < wm.learn.length; i++) {
       var ti = document.querySelector('[data-card-title="'+i+'"]');
       var bo = document.querySelector('[data-card-body="'+i+'"]');
       if (ti) wm.learn[i].title = ti.value;
       if (bo) wm.learn[i].body = bo.value;
+    }
+    for (i = 0; i < wm.assess.questions.length; i++) {
+      var q = wm.assess.questions[i];
+      var qt = document.querySelector('[data-q-text="'+i+'"]');
+      if (qt) q.question = qt.value;
+      if (q.type === "mc") {
+        for (j = 0; j < (q.options || []).length; j++) {
+          var oi = document.querySelector('[data-q-opt="'+i+':'+j+'"]');
+          if (oi) q.options[j] = oi.value;
+        }
+        var sel = document.querySelector('input[name="ce-correct-'+i+'"]:checked');
+        if (sel) q.correct = parseInt(sel.value, 10);
+      }
     }
   }
 
@@ -201,6 +253,49 @@
       });
     });
 
+    /* ---- quiz wiring ---- */
+    function restructure(fn) { return function () { syncScalars(); fn(); drawDrawer(); }; }
+    var addMc = d.querySelector("#ce-add-mc");
+    if (addMc) addMc.addEventListener("click", restructure(function () {
+      wm.assess.questions.push({ type: "mc", question: "", options: ["", "", "", ""], correct: 0 });
+    }));
+    var addText = d.querySelector("#ce-add-text");
+    if (addText) addText.addEventListener("click", restructure(function () {
+      wm.assess.questions.push({ type: "text", question: "" });
+    }));
+    d.querySelectorAll("[data-qdel]").forEach(function (b) {
+      b.addEventListener("click", restructure(function () {
+        wm.assess.questions.splice(parseInt(b.getAttribute("data-qdel"), 10), 1);
+      }));
+    });
+    d.querySelectorAll("[data-qup]").forEach(function (b) {
+      b.addEventListener("click", restructure(function () {
+        var i = parseInt(b.getAttribute("data-qup"), 10);
+        if (i > 0) { var x = wm.assess.questions[i-1]; wm.assess.questions[i-1] = wm.assess.questions[i]; wm.assess.questions[i] = x; }
+      }));
+    });
+    d.querySelectorAll("[data-qdown]").forEach(function (b) {
+      b.addEventListener("click", restructure(function () {
+        var i = parseInt(b.getAttribute("data-qdown"), 10);
+        if (i < wm.assess.questions.length - 1) { var x = wm.assess.questions[i+1]; wm.assess.questions[i+1] = wm.assess.questions[i]; wm.assess.questions[i] = x; }
+      }));
+    });
+    d.querySelectorAll("[data-oadd]").forEach(function (b) {
+      b.addEventListener("click", restructure(function () {
+        wm.assess.questions[parseInt(b.getAttribute("data-oadd"), 10)].options.push("");
+      }));
+    });
+    d.querySelectorAll("[data-odel]").forEach(function (b) {
+      b.addEventListener("click", restructure(function () {
+        var p = b.getAttribute("data-odel").split(":");
+        var q = wm.assess.questions[parseInt(p[0], 10)];
+        var j = parseInt(p[1], 10);
+        q.options.splice(j, 1);
+        if (q.correct >= q.options.length) q.correct = 0;
+        else if (q.correct > j) q.correct--;
+      }));
+    });
+
     var status = d.querySelector("#ce-status");
     function say(t, ok) { status.textContent = t; status.className = "save-status " + (ok ? "ok" : "no"); }
 
@@ -210,6 +305,20 @@
       if (!t) return;
       if (!wm.title.trim()) return say("Title can't be empty.", false);
       if (!wm.learn.length) return say("Keep at least one learn card.", false);
+      // quiz validation — catch mistakes before they reach hires
+      var qs = wm.assess.questions;
+      if (!qs.length) return say("Keep at least one quiz question.", false);
+      for (var qi = 0; qi < qs.length; qi++) {
+        var qq = qs[qi];
+        if (!qq.question.trim()) return say("Question " + (qi + 1) + " has no text.", false);
+        if (qq.type === "mc") {
+          qq.options = qq.options.map(function (o) { return o.trim(); }).filter(Boolean);
+          if (qq.options.length < 2) return say("Question " + (qi + 1) + " needs at least 2 answer options.", false);
+          if (qq.correct == null || qq.correct >= qq.options.length) qq.correct = 0;
+        }
+      }
+      if (!qs.some(function (q) { return q.type === "mc"; }))
+        return say("Keep at least one multiple-choice question (the pass mark needs something to grade).", false);
       var patch = {
         title: wm.title.trim(),
         description: wm.description.trim(),
@@ -217,6 +326,11 @@
           return { id: "p" + (i + 1), title: p.title.trim() || ("Card " + (i + 1)), body: htmlize(p.body) };
         }),
         practice: { iframePlaceholder: wm.practice.iframePlaceholder, steps: wm.practice.steps, embedUrl: wm.practice.embedUrl },
+        assess: { questions: wm.assess.questions.map(function (q) {
+          return q.type === "text"
+            ? { type: "text", question: q.question.trim() }
+            : { type: "mc", question: q.question.trim(), options: q.options, correct: q.correct };
+        }) },
         apply: { scenario: wm.apply.scenario }
       };
       say("Saving…", true);
