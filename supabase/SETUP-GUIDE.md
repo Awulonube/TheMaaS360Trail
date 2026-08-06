@@ -64,7 +64,7 @@ Supabase's free tier covers a team this size comfortably.
 2. Back in the Supabase **SQL Editor**, run (with your email):
 
 ```sql
-update public.profiles set role = 'manager' where email = 'ebunolowola@gmail.com';
+update public.profiles set role = 'manager' where email = 'manageremail@ibm.com';
 ```
 
 3. Reload the site — the sidebar now shows **📊 Manager Dashboard**.

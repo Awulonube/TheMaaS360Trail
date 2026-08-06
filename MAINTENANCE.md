@@ -1,6 +1,6 @@
 # MaaS360 Expedition — Maintainer's Guide
 
-The one document to read before touching anything. A visual companion with diagrams lives at **maintenance.html** (open it in the browser or from the hosted site). Written for whoever runs
+The one document to read before touching anything. Written for whoever runs
 this site — today or three years from now with zero context.
 
 ---
@@ -42,9 +42,9 @@ Either half can be replaced without touching the other.
 
 | Layer | Who uses it | What it's for | Where |
 |---|---|---|---|
-| **1. Browser editing** | Managers | Everyday content changes: text, Learn cards, practice steps, embed links, **and quizzes** (questions, options, correct answers) | "✏️ Edit this task" on any task page |
-| **2. Content files** | Maintainer (or Claude) | Structural work: new tasks, bulk edits, restructuring | `content/*.md` → `node content/tools/build.js` |
-| **3. Code** | Maintainer (or Claude) | Behavior: engines, cloud sync, dashboard | `assets/js/*.js`, page HTML |
+| **1. Browser editing** | Managers | Everyday content changes: reword text, add/remove Learn cards, practice steps, paste embed links | "✏️ Edit this task" on any task page |
+| **2. Content files** | Maintainer (or IBM Bob) | Structural work: quizzes, new tasks, bulk edits | `content/*.md` → `node content/tools/build.js` |
+| **3. Code** | Maintainer (or IBM Bob) | Behavior: engines, cloud sync, dashboard | `assets/js/*.js`, page HTML |
 
 **Precedence:** browser edits (layer 1) are stored in the database and
 override the built files (layer 2) per task. "Revert to built-in" in the
@@ -75,7 +75,7 @@ assets/js/
   tracker.js               Phase clocks + in-app reminder banner
   content-editor.js        Override fetch/merge + manager edit drawer
 assets/data/*-data.js      GENERATED — never hand-edit (build overwrites)
-assets/img/poster-*.svg    Phase posters (generated; ask Claude to restyle)
+assets/img/poster-*.svg    Phase posters (generated; ask Bob to restyle)
 
 content/*.md               Source of truth for task content (layer 2)
 content/tools/             format.js (parser) · build.js · export.js
