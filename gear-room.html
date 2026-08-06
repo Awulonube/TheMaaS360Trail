@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gear Room · MaaS360 Expedition</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body data-phase="gear-room">
+<div id="sidebar"></div>
+<main id="main-content"></main>
+<script src="assets/js/progress.js"></script>
+<script src="assets/data/phases-map.js"></script>
+<script src="assets/js/nav.js"></script>
+<script src="assets/js/profile.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/js/cloud-config.js"></script>
+<script src="assets/js/cloud.js"></script>
+<script src="assets/js/tracker.js"></script>
+<script src="assets/js/content-editor.js"></script>
+<script>
+  Nav.init({ activePage: "gear-room", allPhasesMap: ALL_PHASES_MAP });
+  document.getElementById("main-content").innerHTML = "<div class=\"wrap\"><a class=\"breadcrumb\" href=\"index.html\">\u2190 Back to Trailhead</a><h1 class=\"page-title\">\ud83c\udf92 Gear Room</h1><p class=\"page-sub\">Every link and tool you need for the climb. Items marked as placeholders are awaiting real URLs.</p><div class=\"gear-group\"><p class=\"section-head\">IBM Documentation</p><div class=\"card-grid\"><a class=\"resource-card\" href=\"https://www.ibm.com/docs/en/maas360\" target=\"_blank\" rel=\"noopener\">IBM MaaS360 Docs <span class=\"ext\">open \u2197</span></a></div></div><div class=\"gear-group\"><p class=\"section-head\">Portals & Access</p><div class=\"card-grid\"><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 KME (Knox Mobile Enrollment) Portal]</div><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 ABM (Apple Business Manager) Portal]</div><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 Demo Hierarchy Portal]</div><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 MaaS360 \"M\" Portals]</div><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 Sales Cloud]</div></div></div><div class=\"gear-group\"><p class=\"section-head\">Productivity Tools</p><div class=\"card-grid\"><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 1Password]</div><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 Slack Workspace]</div><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 Outlook]</div></div></div><div class=\"gear-group\"><p class=\"section-head\">Training Resources</p><div class=\"card-grid\"><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 Salesloft]</div><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 Internal Training Library]</div></div></div><div class=\"danger-zone\"><p class=\"section-head\">Danger zone</p><p class=\"hint\">This clears all your saved expedition progress on this browser.</p><button class=\"btn-danger\" id=\"reset-btn\">\u21ba Reset All Progress</button></div></div>";
+  document.getElementById("reset-btn").addEventListener("click", function () {
+    if (confirm("Reset ALL expedition progress on this browser? This cannot be undone.")) {
+      Progress.resetAllProgress();
+      location.reload();
+    }
+  });
+</script>
+</body>
+</html>

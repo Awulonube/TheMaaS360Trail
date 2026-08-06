@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manager Dashboard · MaaS360 Expedition</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+  .mgr-wrap { max-width: 1040px; margin: 0 auto; padding: 30px 24px 90px; }
+
+  /* stat strip */
+  .stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 18px 0 26px; }
+  .stat { background: var(--color-card); border: 1px solid var(--color-line); border-radius: var(--radius); padding: 14px 18px; }
+  .stat b { display: block; font-size: 26px; color: var(--color-text); }
+  .stat span { font-size: 12px; color: var(--color-text-dim); text-transform: uppercase; letter-spacing: .05em; }
+  .stat.warn b { color: #f77855; }
+
+  /* tabs */
+  .mgr-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--color-line); margin-bottom: 22px; }
+  .mgr-tab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--color-text-dim);
+    padding: 10px 16px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .mgr-tab.on { color: var(--color-text); border-bottom-color: var(--color-accent-blue); }
+  .mgr-tab:hover { color: var(--color-text); }
+  .mgr-panel { display: none; }
+  .mgr-panel.on { display: block; }
+
+  /* team rows */
+  .emp-row { display: flex; align-items: center; gap: 16px; padding: 14px 6px;
+    border-bottom: 1px solid var(--color-line); flex-wrap: wrap; }
+  .emp-id b { font-size: 15px; }
+  .emp-id .hint { margin: 0; font-size: 12px; }
+  .emp-meta { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  .emp-pct { font-size: 20px; font-weight: 700; color: var(--color-trail-green); min-width: 54px; text-align: right; }
+  .emp-bars { display: flex; gap: 3px; align-items: flex-end; height: 30px; }
+  .emp-bar { width: 16px; height: 100%; background: #0a0f29; border: 1px solid var(--color-line); border-radius: 3px 3px 0 0; position: relative; overflow: hidden; }
+  .emp-bar > i { position: absolute; bottom: 0; left: 0; right: 0; background: var(--color-trail-green); display: block; }
+  .emp-bar.done > i { background: var(--color-summit-gold); }
+  .emp-detail { display: none; width: 100%; padding: 10px 0 6px; }
+  .emp-detail.on { display: block; }
+
+  .mini-input { background: var(--color-bg-2); border: 1px solid var(--color-line); color: var(--color-text);
+    border-radius: 7px; padding: 6px 9px; font-size: 12.5px; font-family: inherit; }
+  .mini-input.narrow { width: 62px; }
+  .btn-small { background: var(--color-card-hover); color: var(--color-text); border: 1px solid var(--color-line);
+    border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .btn-small:hover { border-color: var(--color-accent-blue); }
+  .btn-small.danger { color: #f77855; }
+  .tag { font-size: 11px; padding: 2px 9px; border-radius: 999px; background: rgba(106,160,255,.14); color: var(--color-accent-blue); white-space: nowrap; }
+  .tag.gold { background: rgba(251,191,36,.14); color: var(--color-summit-gold); }
+  .tag.dim { background: rgba(154,166,212,.12); color: var(--color-text-dim); }
+
+  /* rule cards */
+  .rule-card { background: var(--color-card); border: 1px solid var(--color-line); border-radius: var(--radius);
+    padding: 14px 18px; margin-bottom: 12px; }
+  .rule-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .rule-head b { font-size: 14.5px; }
+  .rule-when { color: var(--color-text-dim); font-size: 13px; }
+  .rule-tools { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .rule-form { display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--color-line); }
+  .rule-form.on { display: block; }
+  .rf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 760px) { .rf-grid { grid-template-columns: 1fr; } .stat-strip { grid-template-columns: repeat(2,1fr); } }
+  .rf-lbl { display: block; font-size: 11.5px; font-weight: 700; color: var(--color-text-dim);
+    text-transform: uppercase; letter-spacing: .06em; margin: 10px 0 5px; }
+  .rf-days label { font-size: 12px; margin-right: 8px; color: var(--color-text); }
+  .switch { position: relative; width: 38px; height: 21px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch i { position: absolute; inset: 0; background: #2a3568; border-radius: 999px; transition: .15s; cursor: pointer; }
+  .switch i::after { content: ""; position: absolute; width: 15px; height: 15px; border-radius: 50%;
+    background: #9aa6d4; top: 3px; left: 3px; transition: .15s; }
+  .switch input:checked + i { background: var(--color-trail-green); }
+  .switch input:checked + i::after { background: #fff; transform: translateX(17px); }
+  .var-chips { margin-top: 6px; }
+  .var-chip { background: rgba(106,160,255,.12); color: var(--color-accent-blue); border: 1px solid var(--color-line);
+    border-radius: 999px; padding: 3px 10px; font-size: 11.5px; cursor: pointer; margin: 3px 4px 0 0; font-family: inherit; }
+  .var-chip:hover { border-color: var(--color-accent-blue); }
+  .gate { max-width: 480px; margin: 12vh auto; text-align: center; }
+  .empty { color: var(--color-text-dim); font-size: 13.5px; padding: 20px 4px; }
+</style>
+</head>
+<body data-phase="manager" style="display:block">
+<div id="app" class="mgr-wrap"><p class="hint">Loading dashboard…</p></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/js/cloud-config.js"></script>
+<script src="assets/data/phases-map.js"></script>
+<script>
+(function () {
+  "use strict";
+  var app = document.getElementById("app");
+  var cfg = window.CLOUD_CONFIG || {};
+  var PHASES = ["essentials","phase1","phase2","phase3","phase4","phase5","phase6","phase7","phase8"];
+  var PHASE_SHORT = { essentials:"S0", phase1:"P1", phase2:"P2", phase3:"P3", phase4:"P4", phase5:"P5", phase6:"P6", phase7:"P7", phase8:"P8" };
+  var PHASE_NAME = { essentials:"Essentials", phase1:"Basecamp", phase2:"Acclimation", phase3:"Ascent", phase4:"High Camp", phase5:"Summit Push", phase6:"Summit", phase7:"Expedition Lead", phase8:"Peak Certified" };
+  var RULE_TYPES = { digest:"Progress digest", midweek:"Midweek reminder", overdue:"Overdue alert", phase_complete:"Phase completion", custom:"Custom message" };
+  var DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var VARS = [["name","Name"],["phase","Phase"],["percent","% done"],["due","Due date"],["days_left","Days left"]];
+
+  var activeTab = "team";
+  var openDetail = {};   // empId -> bool
+  var openRule = {};     // ruleId -> bool
+  var lastFocused = {};  // ruleId -> subj|body
+
+  function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  function gate(html){ app.innerHTML = '<div class="gate setup-card">'+html+'</div>'; }
+  function fmtD(x){ if(!x) return "—"; try{ return new Date(x).toLocaleDateString(undefined,{month:"short",day:"numeric"});}catch(e){return "—";} }
+  function dstr(x){ if(!x) return ""; try{ return new Date(x).toISOString().slice(0,10);}catch(e){return "";} }
+
+  if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY || !window.supabase) {
+    return gate('<p class="page-title">📊 Manager Dashboard</p><p class="hint">Cloud sync isn\'t configured. Fill in <b>assets/js/cloud-config.js</b> first (see supabase/SETUP-GUIDE.md).</p><p><a class="breadcrumb" href="index.html">← Back</a></p>');
+  }
+  var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  var me = null, profiles = [], progress = [], timelines = [], rules = [], log = [];
+
+  db.auth.getSession().then(function (res) {
+    var s = res.data && res.data.session;
+    if (!s) return gate('<p class="page-title">📊 Manager Dashboard</p><p class="hint">Please sign in first.</p><p><a class="breadcrumb" href="login.html">Go to sign in →</a></p>');
+    me = s.user;
+    load();
+  });
+
+  function load() {
+    Promise.all([
+      db.from("profiles").select("*").order("full_name"),
+      db.from("task_progress").select("user_id,phase_id,task_id,state"),
+      db.from("phase_timeline").select("*"),
+      db.from("alert_rules").select("*").order("created_at"),
+      db.from("email_log").select("*").order("sent_at",{ascending:false}).limit(50)
+    ]).then(function (r) {
+      profiles = r[0].data || []; progress = r[1].data || [];
+      timelines = r[2].data || []; rules = r[3].data || []; log = r[4].data || [];
+      var mine = profiles.find(function(p){ return p.id === me.id; });
+      if (!mine || mine.role !== "manager") {
+        return gate('<p class="page-title">📊 Manager Dashboard</p><p class="hint">Your account isn\'t a manager. A current manager can promote you in People &amp; roles.</p><p><a class="breadcrumb" href="index.html">← Back</a></p>');
+      }
+      render();
+    });
+  }
+
+  /* ---------- derived ---------- */
+  function phasePct(uid, pid) {
+    var total = (window.ALL_PHASES_MAP[pid]||[]).length;
+    if (!total) return 0;
+    var done = progress.filter(function(r){
+      return r.user_id===uid && r.phase_id===pid && r.state && (r.state.sectionsComplete||[]).length===4;
+    }).length;
+    return Math.round(done/total*100);
+  }
+  function overallPct(uid) {
+    var total = 0, done = 0;
+    PHASES.forEach(function(pid){
+      var ids = window.ALL_PHASES_MAP[pid]||[];
+      total += ids.length;
+      done += progress.filter(function(r){
+        return r.user_id===uid && r.phase_id===pid && r.state && (r.state.sectionsComplete||[]).length===4;
+      }).length;
+    });
+    return total ? Math.round(done/total*100) : 0;
+  }
+  function timelineOf(uid, pid) {
+    return timelines.find(function(t){ return t.user_id===uid && t.phase_id===pid; }) || null;
+  }
+  function currentPhase(uid) {
+    return PHASES.find(function(pid){ var t=timelineOf(uid,pid); return t && t.started_at && !t.completed_at; }) || null;
+  }
+  function overdueCount() {
+    var n = 0, now = Date.now();
+    timelines.forEach(function(t){
+      if (t.started_at && !t.completed_at &&
+          now > new Date(t.started_at).getTime() + (t.duration_days||7)*86400000) n++;
+    });
+    return n;
+  }
+  function scheduleText(r) {
+    if (r.rule_type === "phase_complete") return "fires on completion";
+    var s = r.schedule || {};
+    var days = s.days || [];
+    var d;
+    if (!days.length || days.length === 7) d = "Every day";
+    else if (days.join() === "1,2,3,4,5") d = "Weekdays";
+    else d = days.map(function(x){ return DAY_NAMES[x]; }).join(", ");
+    var hh = s.hour != null ? s.hour : 9, mm = s.minute != null ? s.minute : 0;
+    return d + " · " + (hh % 12 || 12) + ":" + (mm < 10 ? "0" : "") + mm + (hh < 12 ? " AM" : " PM");
+  }
+
+  /* ---------- render ---------- */
+  function render() {
+    var emps = profiles.filter(function(p){ return p.role==="employee"; });
+    var active = emps.filter(function(e){ return currentPhase(e.id); }).length;
+    var weekAgo = Date.now() - 7*86400000;
+    var sentWeek = log.filter(function(l){ return new Date(l.sent_at).getTime() > weekAgo && l.status !== "error"; }).length;
+    var od = overdueCount();
+
+    var html =
+      '<a class="breadcrumb" href="index.html">← Back to Trailhead</a>' +
+      '<h1 class="page-title">📊 Manager Dashboard</h1>' +
+      '<div class="stat-strip">' +
+        '<div class="stat"><b>'+emps.length+'</b><span>Employees</span></div>' +
+        '<div class="stat"><b>'+active+'</b><span>Actively onboarding</span></div>' +
+        '<div class="stat'+(od?' warn':'')+'"><b>'+od+'</b><span>Overdue phases</span></div>' +
+        '<div class="stat"><b>'+sentWeek+'</b><span>Emails this week</span></div>' +
+      '</div>' +
+      '<div class="mgr-tabs">' +
+        [["team","🧗 Team"],["people","👥 People"],["alerts","⏰ Alerts"],["log","📬 Email log"]].map(function(t){
+          return '<button class="mgr-tab'+(activeTab===t[0]?" on":"")+'" data-tab="'+t[0]+'">'+t[1]+'</button>';
+        }).join("") +
+      '</div>' +
+      '<div class="mgr-panel'+(activeTab==="team"?" on":"")+'" id="panel-team">'+teamPanel(emps)+'</div>' +
+      '<div class="mgr-panel'+(activeTab==="people"?" on":"")+'" id="panel-people">'+peoplePanel()+'</div>' +
+      '<div class="mgr-panel'+(activeTab==="alerts"?" on":"")+'" id="panel-alerts">'+alertsPanel()+'</div>' +
+      '<div class="mgr-panel'+(activeTab==="log"?" on":"")+'" id="panel-log">'+logPanel()+'</div>';
+
+    app.innerHTML = html;
+    wire();
+  }
+
+  function teamPanel(emps) {
+    if (!emps.length) return '<p class="empty">No employees yet — they appear here after creating an account on the sign-in page.</p>';
+    return emps.map(function (e) {
+      var cur = currentPhase(e.id);
+      var bars = PHASES.map(function(pid){
+        var pct = phasePct(e.id,pid);
+        return '<div class="emp-bar'+(pct===100?" done":"")+'" title="'+PHASE_SHORT[pid]+' · '+pct+'%"><i style="height:'+pct+'%"></i></div>';
+      }).join("");
+      var rows = PHASES.map(function(pid){
+        var t = timelineOf(e.id,pid) || {};
+        return '<tr><td>'+PHASE_SHORT[pid]+' · '+PHASE_NAME[pid]+'</td><td>'+phasePct(e.id,pid)+'%</td>' +
+          '<td><input class="mini-input" type="date" data-emp="'+e.id+'" data-phase="'+pid+'" data-k="started_at" value="'+dstr(t.started_at)+'"></td>' +
+          '<td><input class="mini-input narrow" type="number" step="0.5" min="1" data-emp="'+e.id+'" data-phase="'+pid+'" data-k="duration_days" value="'+(t.duration_days!=null?t.duration_days:7)+'"></td>' +
+          '<td><input class="mini-input narrow" type="number" step="0.5" min="0.5" data-emp="'+e.id+'" data-phase="'+pid+'" data-k="midweek_days" value="'+(t.midweek_days!=null?t.midweek_days:3.5)+'"></td>' +
+          '<td>'+fmtD(t.completed_at)+'</td></tr>';
+      }).join("");
+      return '<div class="emp-row">' +
+        '<div class="emp-id"><b>'+esc(e.full_name||e.email)+'</b><p class="hint">'+esc(e.email)+'</p></div>' +
+        (cur ? '<span class="tag">'+PHASE_NAME[cur]+'</span>' : '<span class="tag dim">not started</span>') +
+        '<div class="emp-meta">' +
+          '<div class="emp-bars">'+bars+'</div>' +
+          '<span class="emp-pct">'+overallPct(e.id)+'%</span>' +
+          '<button class="btn-small" data-toggle-emp="'+e.id+'">'+(openDetail[e.id]?"Hide":"Timeline")+'</button>' +
+        '</div>' +
+        '<div class="emp-detail'+(openDetail[e.id]?" on":"")+'" id="det-'+e.id+'">' +
+          '<div class="dash-scroll"><table class="dash-table">' +
+          '<thead><tr><th>Phase</th><th>%</th><th>Start</th><th>Days</th><th>Midweek</th><th>Done</th></tr></thead>' +
+          '<tbody>'+rows+'</tbody></table></div>' +
+          '<button class="btn-small" data-save-emp="'+e.id+'">💾 Save changes</button> ' +
+          '<span class="save-status" id="st-'+e.id+'"></span>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  function peoplePanel() {
+    var rows = profiles.map(function (p) {
+      return '<tr><td>'+esc(p.full_name||"—")+'</td><td class="hint" style="margin:0">'+esc(p.email)+'</td>' +
+        '<td><select class="mini-input" data-role="'+p.id+'"><option value="employee"'+(p.role==="employee"?" selected":"")+'>employee</option><option value="manager"'+(p.role==="manager"?" selected":"")+'>manager</option></select></td>' +
+        '<td><input class="mini-input" style="width:180px" data-mgr-email="'+p.id+'" value="'+esc(p.manager_email||"")+'" placeholder="(all managers)"></td>' +
+        '<td><button class="btn-small" data-save-person="'+p.id+'">Save</button></td></tr>';
+    }).join("");
+    return '<div class="dash-scroll"><table class="dash-table">' +
+      '<thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Notifies manager</th><th></th></tr></thead>' +
+      '<tbody>'+rows+'</tbody></table></div>' +
+      '<p class="hint">An empty "Notifies manager" field means alerts go to every manager account.</p>';
+  }
+
+  function alertsPanel() {
+    var cards = rules.map(function (r) {
+      var s = r.schedule || {};
+      var form = '';
+      if (openRule[r.id]) {
+        var dayBoxes = DAY_NAMES.map(function(d,i){
+          var on = (s.days||[]).indexOf(i)>=0;
+          return '<label><input type="checkbox" data-rule-day="'+r.id+'" value="'+i+'"'+(on?" checked":"")+'> '+d+'</label>';
+        }).join("");
+        var schedUi = r.rule_type==="phase_complete"
+          ? '<p class="hint" style="margin:6px 0 0">This rule is event-based — it fires on each scheduler run when a phase completion is waiting.</p>'
+          : '<span class="rf-lbl">Days</span><div class="rf-days">'+dayBoxes+'</div>' +
+            '<span class="rf-lbl">Time</span>' +
+            '<input class="mini-input narrow" type="number" min="0" max="23" data-rule-h="'+r.id+'" value="'+(s.hour!=null?s.hour:9)+'"> : ' +
+            '<input class="mini-input narrow" type="number" min="0" max="59" data-rule-m="'+r.id+'" value="'+(s.minute!=null?s.minute:0)+'"> ' +
+            '<input class="mini-input" style="width:170px" data-rule-tz="'+r.id+'" value="'+esc(s.tz||"America/New_York")+'" title="IANA timezone">';
+        form =
+          '<div class="rule-form on">' +
+          '<div class="rf-grid"><div>' +
+            '<span class="rf-lbl">Rule name</span><input class="mini-input" style="width:100%" data-rule-name="'+r.id+'" value="'+esc(r.name)+'">' +
+            schedUi +
+            '<span class="rf-lbl">Repeat</span>' +
+            '<select class="mini-input" data-rule-repeat="'+r.id+'"><option value="once_per_phase"'+(r.repeat_policy==="once_per_phase"?" selected":"")+'>Once per phase</option><option value="every_match"'+(r.repeat_policy==="every_match"?" selected":"")+'>Every scheduled time</option></select>' +
+          '</div><div>' +
+            '<span class="rf-lbl">Send to</span>' +
+            '<select class="mini-input" data-rule-rcpt="'+r.id+'">'+["managers","employees","both","custom"].map(function(x){return '<option'+(r.recipients===x?" selected":"")+'>'+x+'</option>';}).join("")+'</select>' +
+            '<input class="mini-input" style="width:100%;margin-top:6px" data-rule-extra="'+r.id+'" value="'+esc(r.extra_emails||"")+'" placeholder="extra emails, comma-separated">' +
+            '<span class="rf-lbl">Subject</span><input class="mini-input" style="width:100%" data-rule-subj="'+r.id+'" value="'+esc(r.subject_template||"")+'">' +
+            '<span class="rf-lbl">Message</span><textarea class="mini-input" style="width:100%;height:64px" data-rule-body="'+r.id+'">'+esc(r.body_template||"")+'</textarea>' +
+            '<div class="var-chips">'+VARS.map(function(v){ return '<button type="button" class="var-chip" data-var="'+v[0]+'" data-rule="'+r.id+'">'+v[1]+'</button>'; }).join("")+'</div>' +
+          '</div></div>' +
+          '<div class="btn-row" style="margin-top:14px">' +
+            '<button class="btn-small" data-save-rule="'+r.id+'">💾 Save rule</button>' +
+            '<button class="btn-small danger" data-del-rule="'+r.id+'">Delete</button>' +
+            '<span class="save-status" id="rst-'+r.id+'"></span>' +
+          '</div></div>';
+      }
+      return '<div class="rule-card">' +
+        '<div class="rule-head">' +
+          '<label class="switch"><input type="checkbox" data-rule-on="'+r.id+'"'+(r.enabled?" checked":"")+'><i></i></label>' +
+          '<b>'+esc(r.name)+'</b>' +
+          '<span class="tag gold">'+RULE_TYPES[r.rule_type]+'</span>' +
+          '<span class="rule-when">'+scheduleText(r)+' → '+esc(r.recipients)+'</span>' +
+          '<div class="rule-tools"><button class="btn-small" data-open-rule="'+r.id+'">'+(openRule[r.id]?"Close":"Edit")+'</button></div>' +
+        '</div>' + form + '</div>';
+    }).join("");
+
+    return cards +
+      '<div class="btn-row" style="margin-top:6px">' +
+      '<select class="mini-input" id="new-rule-type">'+Object.keys(RULE_TYPES).map(function(k){ return '<option value="'+k+'">'+RULE_TYPES[k]+'</option>'; }).join("")+'</select>' +
+      '<button class="btn-small" id="add-rule">＋ Add rule</button>' +
+      '<span class="save-status" id="rule-status"></span></div>' +
+      '<p class="hint">Toggles apply immediately. Message templates fill in the highlighted values automatically — click a chip to insert one where your cursor is.</p>';
+  }
+
+  function logPanel() {
+    if (!log.length) return '<p class="empty">Nothing sent yet — emails appear here once the scheduler runs.</p>';
+    var rows = log.map(function(l){
+      return '<tr><td>'+new Date(l.sent_at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})+'</td>' +
+        '<td>'+esc(l.rule_name)+'</td><td>'+esc(l.recipient)+'</td><td>'+esc(l.subject)+'</td>' +
+        '<td class="'+(l.status==="error"?"no":"ok")+'">'+esc(l.status)+(l.error?" — "+esc(l.error.slice(0,70)):"")+'</td></tr>';
+    }).join("");
+    return '<div class="dash-scroll"><table class="dash-table">' +
+      '<thead><tr><th>When</th><th>Rule</th><th>To</th><th>Subject</th><th>Status</th></tr></thead>' +
+      '<tbody>'+rows+'</tbody></table></div>';
+  }
+
+  /* ---------- wiring ---------- */
+  function wire() {
+    app.querySelectorAll(".mgr-tab").forEach(function(b){
+      b.addEventListener("click", function(){ activeTab = b.getAttribute("data-tab"); render(); });
+    });
+    app.querySelectorAll("[data-toggle-emp]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var id = b.getAttribute("data-toggle-emp");
+        openDetail[id] = !openDetail[id]; render();
+      });
+    });
+    app.querySelectorAll("[data-save-emp]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var uid = btn.getAttribute("data-save-emp");
+        var st = document.getElementById("st-"+uid);
+        var ups = PHASES.map(function (pid) {
+          var q = function(k){ return app.querySelector('[data-emp="'+uid+'"][data-phase="'+pid+'"][data-k="'+k+'"]'); };
+          var started = q("started_at").value;
+          var existing = timelineOf(uid,pid) || {};
+          return {
+            user_id: uid, phase_id: pid,
+            started_at: started ? new Date(started+"T09:00:00").toISOString() : null,
+            duration_days: parseFloat(q("duration_days").value)||7,
+            midweek_days: parseFloat(q("midweek_days").value)||3.5,
+            completed_at: existing.completed_at||null,
+            complete_notified: existing.complete_notified||false,
+            updated_at: new Date().toISOString()
+          };
+        });
+        st.textContent = "Saving…"; st.className = "save-status ok";
+        db.from("phase_timeline").upsert(ups).then(function (r) {
+          if (r.error) { st.textContent = "Error: "+r.error.message; st.className="save-status no"; }
+          else load();
+        });
+      });
+    });
+    app.querySelectorAll("[data-save-person]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var uid = btn.getAttribute("data-save-person");
+        db.from("profiles").update({
+          role: app.querySelector('[data-role="'+uid+'"]').value,
+          manager_email: app.querySelector('[data-mgr-email="'+uid+'"]').value.trim()
+        }).eq("id", uid).then(function(){ load(); });
+      });
+    });
+    app.querySelectorAll("[data-open-rule]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var id = b.getAttribute("data-open-rule");
+        openRule[id] = !openRule[id]; render();
+      });
+    });
+    // enable/disable toggle saves immediately
+    app.querySelectorAll("[data-rule-on]").forEach(function(c){
+      c.addEventListener("change", function(){
+        db.from("alert_rules").update({ enabled: c.checked })
+          .eq("id", c.getAttribute("data-rule-on")).then(function(){ load(); });
+      });
+    });
+    // variable chips
+    rules.forEach(function (r) {
+      var subj = app.querySelector('[data-rule-subj="'+r.id+'"]');
+      var body = app.querySelector('[data-rule-body="'+r.id+'"]');
+      if (subj) subj.addEventListener("focus", function(){ lastFocused[r.id] = "subj"; });
+      if (body) body.addEventListener("focus", function(){ lastFocused[r.id] = "body"; });
+    });
+    app.querySelectorAll(".var-chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        var id = chip.getAttribute("data-rule");
+        var token = "{{" + chip.getAttribute("data-var") + "}}";
+        var which = lastFocused[id] || "body";
+        var el = app.querySelector(which === "subj" ? '[data-rule-subj="'+id+'"]' : '[data-rule-body="'+id+'"]');
+        if (!el) return;
+        var start = (typeof el.selectionStart === "number") ? el.selectionStart : el.value.length;
+        var end = (typeof el.selectionEnd === "number") ? el.selectionEnd : el.value.length;
+        el.value = el.value.slice(0, start) + token + el.value.slice(end);
+        var pos = start + token.length;
+        el.focus();
+        try { el.setSelectionRange(pos, pos); } catch (e) {}
+      });
+    });
+    app.querySelectorAll("[data-save-rule]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-save-rule");
+        var rule = rules.find(function(r){ return r.id===id; });
+        var st = document.getElementById("rst-"+id);
+        var days = [].slice.call(app.querySelectorAll('[data-rule-day="'+id+'"]:checked')).map(function(c){ return parseInt(c.value,10); });
+        var patch = {
+          name: app.querySelector('[data-rule-name="'+id+'"]').value.trim(),
+          recipients: app.querySelector('[data-rule-rcpt="'+id+'"]').value,
+          extra_emails: app.querySelector('[data-rule-extra="'+id+'"]').value.trim(),
+          subject_template: app.querySelector('[data-rule-subj="'+id+'"]').value,
+          body_template: app.querySelector('[data-rule-body="'+id+'"]').value,
+          repeat_policy: app.querySelector('[data-rule-repeat="'+id+'"]').value
+        };
+        if (rule.rule_type !== "phase_complete") {
+          patch.schedule = {
+            days: days,
+            hour: parseInt(app.querySelector('[data-rule-h="'+id+'"]').value,10)||9,
+            minute: parseInt(app.querySelector('[data-rule-m="'+id+'"]').value,10)||0,
+            tz: app.querySelector('[data-rule-tz="'+id+'"]').value.trim()||"UTC"
+          };
+        }
+        st.textContent = "Saving…"; st.className = "save-status ok";
+        db.from("alert_rules").update(patch).eq("id", id).then(function (r) {
+          if (r.error) { st.textContent = "Error: "+r.error.message; st.className = "save-status no"; }
+          else { openRule[id] = false; load(); }
+        });
+      });
+    });
+    app.querySelectorAll("[data-del-rule]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (!confirm("Delete this alert rule?")) return;
+        db.from("alert_rules").delete().eq("id", btn.getAttribute("data-del-rule")).then(function(){ load(); });
+      });
+    });
+    var add = document.getElementById("add-rule");
+    if (add) add.addEventListener("click", function () {
+      var type = document.getElementById("new-rule-type").value;
+      var rs = document.getElementById("rule-status");
+      db.from("alert_rules").insert({
+        name: "New " + RULE_TYPES[type].toLowerCase(), rule_type: type, enabled: false,
+        schedule: {days:[1,2,3,4,5],hour:9,minute:0,tz:"America/New_York"},
+        recipients: "managers", created_by: me.id
+      }).select().then(function (r) {
+        if (r.error) { rs.textContent = "Error: "+r.error.message; rs.className = "save-status no"; }
+        else { if (r.data && r.data[0]) openRule[r.data[0].id] = true; load(); }
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>

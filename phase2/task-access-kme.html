@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Access Kme · MaaS360 Expedition</title>
+<link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body data-phase="phase2">
+<div id="sidebar"></div>
+<main id="main-content"></main>
+<script src="../assets/js/progress.js"></script>
+<script src="../assets/data/phases-map.js"></script>
+<script src="../assets/data/phase2-data.js"></script>
+<script src="../assets/js/nav.js"></script>
+<script src="../assets/js/profile.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="../assets/js/cloud-config.js"></script>
+<script src="../assets/js/cloud.js"></script>
+<script src="../assets/js/tracker.js"></script>
+<script src="../assets/js/content-editor.js"></script>
+<script src="../assets/js/task-engine.js"></script>
+<script>
+  var task = PHASE2_DATA.tasks.find(function (t) { return t.id === "task-access-kme"; });
+  Nav.init({ activePage: "phase2", allPhasesMap: ALL_PHASES_MAP, base: "../" });
+  TaskEngine.render(task);
+</script>
+</body>
+</html>

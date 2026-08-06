@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · MaaS360 Expedition</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+  .login-wrap { max-width: 420px; margin: 8vh auto; padding: 0 18px; }
+  .login-card { background: var(--color-card); border: 1px solid var(--color-line);
+    border-radius: var(--radius); padding: 26px 28px; box-shadow: var(--shadow); }
+  .login-title { font-size: 24px; font-weight: 800; margin: 0 0 4px; }
+  .login-sub { color: var(--color-text-dim); font-size: 14px; margin: 0 0 18px; }
+  .login-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .login-tabs button { flex: 1; background: var(--color-bg-2); color: var(--color-text-dim);
+    border: 1px solid var(--color-line); border-radius: 9px; padding: 8px; cursor: pointer; font-size: 14px; }
+  .login-tabs button.on { background: #1a2660; color: #fff; border-color: var(--color-accent-blue); }
+  .hidden { display: none; }
+</style>
+</head>
+<body data-phase="login" style="display:block">
+<div class="login-wrap">
+  <div class="login-card">
+    <p class="login-title">🏔️ MaaS360 Expedition</p>
+    <p class="login-sub">Sign in to sync your progress and unlock your personal timeline.</p>
+    <div class="login-tabs">
+      <button id="tab-in" class="on">Sign in</button>
+      <button id="tab-up">Create account</button>
+    </div>
+    <div class="field" id="f-name-wrap" style="display:none">
+      <label for="l-name">Full name</label>
+      <input id="l-name" type="text" placeholder="Jordan Rivera">
+    </div>
+    <div class="field"><label for="l-email">Work email</label>
+      <input id="l-email" type="email" placeholder="you@company.com"></div>
+    <div class="field"><label for="l-pass">Password</label>
+      <input id="l-pass" type="password" placeholder="••••••••"></div>
+    <div class="field" id="f-mgr-wrap" style="display:none">
+      <label for="l-mgr">Your manager's email (for notifications)</label>
+      <input id="l-mgr" type="email" placeholder="manager@company.com">
+    </div>
+    <div class="btn-row"><button class="btn-primary" id="go" style="width:100%">Sign in</button></div>
+    <p class="save-status" id="msg"></p>
+    <p class="hint" id="local-note" style="display:none">Cloud sync isn't configured yet — an admin needs to fill in
+      <b>assets/js/cloud-config.js</b>. Until then the site works in local-only mode.
+      <a href="index.html" style="color:var(--color-accent-blue)">Continue without signing in →</a></p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/js/cloud-config.js"></script>
+<script>
+(function () {
+  var cfg = window.CLOUD_CONFIG || {};
+  var msg = document.getElementById("msg");
+  function say(t, ok) { msg.textContent = t; msg.className = "save-status " + (ok ? "ok" : "no"); }
+
+  if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY || !window.supabase) {
+    document.getElementById("local-note").style.display = "block";
+    document.getElementById("go").disabled = true;
+    return;
+  }
+  var client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  var mode = "in";
+  var tabIn = document.getElementById("tab-in"), tabUp = document.getElementById("tab-up");
+
+  function setMode(m) {
+    mode = m;
+    tabIn.classList.toggle("on", m === "in");
+    tabUp.classList.toggle("on", m === "up");
+    document.getElementById("f-name-wrap").style.display = m === "up" ? "" : "none";
+    document.getElementById("f-mgr-wrap").style.display = m === "up" ? "" : "none";
+    document.getElementById("go").textContent = m === "up" ? "Create account" : "Sign in";
+  }
+  tabIn.addEventListener("click", function () { setMode("in"); });
+  tabUp.addEventListener("click", function () { setMode("up"); });
+
+  document.getElementById("go").addEventListener("click", function () {
+    var email = document.getElementById("l-email").value.trim();
+    var pass = document.getElementById("l-pass").value;
+    if (!email || !pass) return say("Email and password are required.", false);
+    say(mode === "up" ? "Creating account…" : "Signing in…", true);
+
+    if (mode === "up") {
+      var name = document.getElementById("l-name").value.trim();
+      var mgr = document.getElementById("l-mgr").value.trim();
+      client.auth.signUp({ email: email, password: pass, options: { data: { full_name: name } } })
+        .then(function (res) {
+          if (res.error) return say(res.error.message, false);
+          var uid = res.data.user && res.data.user.id;
+          var after = function () {
+            if (res.data.session) { location.href = "index.html"; }
+            else say("Account created. Check your email to confirm, then sign in.", true);
+          };
+          if (uid && res.data.session) {
+            client.from("profiles").update({ full_name: name, manager_email: mgr })
+              .eq("id", uid).then(after, after);
+          } else after();
+        });
+    } else {
+      client.auth.signInWithPassword({ email: email, password: pass }).then(function (res) {
+        if (res.error) return say(res.error.message, false);
+        location.href = "index.html";
+      });
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+# macOS noise
+.DS_Store
+
+# local scratch — never commit secrets beyond the public anon key
+*.log
+node_modules/
+TheMaaS360Trail/

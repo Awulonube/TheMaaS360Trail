@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Timeline · MaaS360 Expedition</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body data-phase="setup">
+<div id="sidebar"></div>
+<main id="main-content"></main>
+
+<script src="assets/js/progress.js"></script>
+<script src="assets/js/profile.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/js/cloud-config.js"></script>
+<script src="assets/js/cloud.js"></script>
+<script src="assets/data/phases-map.js"></script>
+<script src="assets/js/nav.js"></script>
+<script src="assets/js/tracker.js"></script>
+<script src="assets/js/content-editor.js"></script>
+<script>
+Nav.init({ activePage: "setup", allPhasesMap: ALL_PHASES_MAP });
+
+(function () {
+  var main = document.getElementById("main-content");
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+  function fmt(d) {
+    if (!d) return "—";
+    try { return new Date(d).toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
+    catch(e){ return "—"; }
+  }
+
+  /* ---- account card: cloud-signed-in, cloud-signed-out, or local mode ---- */
+  function accountSection() {
+    if (window.Cloud && Cloud.enabled) {
+      if (Cloud.user) {
+        var p = Cloud.profile || {};
+        return '<div class="setup-card">' +
+          '<p class="section-head">👤 Your account</p>' +
+          '<p><b>' + esc(p.full_name || Cloud.user.email) + '</b><br>' +
+          '<span class="hint">' + esc(Cloud.user.email) + ' · role: ' + esc(p.role || "employee") + '</span></p>' +
+          '<div class="field"><label for="f-memail">Your manager\'s email (for notifications)</label>' +
+          '<input id="f-memail" type="email" placeholder="manager@company.com" value="' + esc(p.manager_email || "") + '"></div>' +
+          '<div class="btn-row"><button class="btn-primary" id="save-mgr">Save</button></div>' +
+          '<p class="save-status" id="save-status"></p>' +
+          '<p class="hint">Progress syncs to your account automatically. Email reminders are scheduled in the cloud' +
+          (p.role === "manager" ? ' — configure them in the <a href="manager.html" style="color:var(--color-accent-blue)">Manager Dashboard</a>.' : '.') + '</p>' +
+          '</div>';
+      }
+      return '<div class="setup-card">' +
+        '<p class="section-head">👤 Your account</p>' +
+        '<p class="hint">You\'re browsing in local-only mode — progress stays on this browser and no email reminders are scheduled for you.</p>' +
+        '<div class="btn-row"><a class="btn-primary" style="text-decoration:none;display:inline-block" href="login.html">🔑 Sign in / create account</a></div>' +
+        '</div>';
+    }
+    /* local-only fallback (cloud not configured): minimal identity for the phase clock */
+    var lp = Profile.getProfile();
+    return '<div class="setup-card">' +
+      '<p class="section-head">👤 Your details (local mode)</p>' +
+      '<p class="hint">Cloud sync isn\'t configured, so these stay on this browser and start your phase clocks.</p>' +
+      '<div class="field"><label for="f-name">Full name</label>' +
+      '<input id="f-name" type="text" value="' + esc(lp.name) + '"></div>' +
+      '<div class="field"><label for="f-pemail">Your email</label>' +
+      '<input id="f-pemail" type="email" value="' + esc(lp.personalEmail) + '"></div>' +
+      '<div class="field"><label for="f-memail">Manager email</label>' +
+      '<input id="f-memail" type="email" value="' + esc(lp.managerEmail) + '"></div>' +
+      '<div class="btn-row"><button class="btn-primary" id="save-local">Save</button></div>' +
+      '<p class="save-status" id="save-status"></p>' +
+      '</div>';
+  }
+
+  function timelineSection() {
+    var order = Nav.PHASE_ORDER;
+    var rows = order.map(function (id) {
+      var ids = ALL_PHASES_MAP[id] || [];
+      var pct = Progress.getPhaseProgress(id, ids).percent;
+      var locked = Nav.isPhaseLocked(id, ALL_PHASES_MAP);
+      var t = Profile.getTiming(id);
+      var s = Profile.getSchedule(id);
+      var title = Tracker.titleOf(id);
+
+      var statusChip, cls;
+      if (pct === 100) { statusChip = "★ Complete"; cls = "complete"; }
+      else if (locked && !t.startedAt) { statusChip = "🔒 Locked"; cls = "locked"; }
+      else if (s.overdue) { statusChip = "⏰ Overdue"; cls = "overdue"; }
+      else if (t.startedAt) { statusChip = "In progress"; cls = "active"; }
+      else { statusChip = "Not started"; cls = "idle"; }
+
+      return '<tr class="dash-row '+cls+'">' +
+        '<td class="dr-phase">'+esc(title)+'</td>' +
+        '<td><span class="dr-chip '+cls+'">'+statusChip+'</span></td>' +
+        '<td>'+pct+'%</td>' +
+        '<td>'+fmt(s.started)+'</td>' +
+        '<td>'+fmt(s.midweek)+'</td>' +
+        '<td>'+fmt(s.due)+'</td>' +
+      '</tr>';
+    }).join("");
+
+    var note = (window.Cloud && Cloud.enabled && Cloud.user)
+      ? 'Dates can be adjusted by your manager; reminders follow this schedule automatically.'
+      : 'Each phase is allotted ~1 week from when it unlocks, with a midweek checkpoint.';
+
+    return '<div class="setup-card wide">' +
+      '<p class="section-head">🗓️ Expedition timeline</p>' +
+      '<p class="hint">' + note + '</p>' +
+      '<div class="dash-scroll"><table class="dash-table">' +
+        '<thead><tr><th>Phase</th><th>Status</th><th>Progress</th><th>Started</th><th>Midweek</th><th>Due</th></tr></thead>' +
+        '<tbody>'+rows+'</tbody>' +
+      '</table></div>' +
+    '</div>';
+  }
+
+  function render() {
+    main.innerHTML =
+      '<div class="wrap">' +
+        '<a class="breadcrumb" href="index.html">← Back to Trailhead</a>' +
+        '<h1 class="page-title">⚙️ My Timeline</h1>' +
+        '<p class="page-sub">Your account, phase schedule, and progress at a glance.</p>' +
+        '<div class="setup-grid">' + accountSection() + '</div>' +
+        timelineSection() +
+      '</div>';
+    wire();
+  }
+
+  function wire() {
+    var status = document.getElementById("save-status");
+    function say(t, ok) { if (status) { status.textContent = t; status.className = "save-status " + (ok ? "ok" : "no"); } }
+    var re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    var saveMgr = document.getElementById("save-mgr");
+    if (saveMgr) saveMgr.addEventListener("click", function () {
+      var m = document.getElementById("f-memail").value.trim();
+      if (m && !re.test(m)) return say("That email looks invalid.", false);
+      Cloud.client().from("profiles").update({ manager_email: m }).eq("id", Cloud.user.id)
+        .then(function (r) {
+          if (r.error) say("Error: " + r.error.message, false);
+          else { say("Saved ✓", true); if (Cloud.profile) Cloud.profile.manager_email = m; }
+        });
+    });
+
+    var saveLocal = document.getElementById("save-local");
+    if (saveLocal) saveLocal.addEventListener("click", function () {
+      var name = document.getElementById("f-name").value.trim();
+      var pe = document.getElementById("f-pemail").value.trim();
+      var me = document.getElementById("f-memail").value.trim();
+      if (!name) return say("Please enter your name.", false);
+      if (!re.test(pe) || !re.test(me)) return say("Check the email addresses.", false);
+      Profile.saveProfile({ name: name, personalEmail: pe, managerEmail: me });
+      if (window.Tracker) Tracker.run(ALL_PHASES_MAP);
+      say("Saved. Phase clocks are running.", true);
+      setTimeout(render, 700);
+    });
+  }
+
+  // Wait for cloud session restore so the account card shows the right state.
+  if (window.Cloud && Cloud.ready) render();
+  else document.addEventListener("cloud-ready", render);
+  // Safety: render anyway if cloud never reports (e.g. CDN blocked)
+  setTimeout(function () { if (!main.innerHTML) render(); }, 2500);
+})();
+</script>
+</body>
+</html>
