@@ -27,7 +27,7 @@ Supabase's free tier covers a team this size comfortably.
   The browser still keeps a local copy, so pages stay fast and the site
   still works logged-out (local-only mode).
 - **Timelines**: each employee has per-phase start dates, durations, and
-  midway points — editable by managers in the dashboard.
+  midweek points — editable by managers in the dashboard.
 - **Alerts**: a scheduler runs every 5 minutes on Supabase's servers, reads
   your alert rules, and sends email via your SMTP account. Because it runs
   server-side, alerts are **schedule-driven, not visit-driven**.
@@ -46,7 +46,7 @@ Supabase's free tier covers a team this size comfortably.
 1. In the project: **SQL Editor → New query**.
 2. Open `supabase/schema.sql` from this folder, paste the whole file, **Run**.
 3. You should see "Success. No rows returned". This created the five tables,
-   security policies, and four starter alert rules (midway Wednesday 9am,
+   security policies, and four starter alert rules (midweek Wednesday 9am,
    weekday overdue checks, completion notices, Monday 8:30 digest).
 
 ## Step 3 — Connect the website (3 min)
@@ -153,8 +153,8 @@ progress follows them across devices.
 
 - **Team progress** — per-phase bars for every employee at a glance.
 - **Timeline control** — expand any employee → set phase start dates, change
-  the days allotted per phase (default 7), move the midway point. This is
-  what drives midway/overdue emails per person.
+  the days allotted per phase (default 7), move the midweek point. This is
+  what drives midweek/overdue emails per person.
 - **Alert rules** — the schedule engine. Each rule has: on/off, days of week,
   time + timezone, recipients (managers / employees / both / custom emails),
   subject and body templates with `{{name}}`, `{{phase}}`, `{{percent}}`,

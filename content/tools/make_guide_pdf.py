@@ -231,7 +231,7 @@ def build():
         "allotted about a week; see your own dates under <b>My Timeline</b>.", "body"),
       table([
         ["You will receive", "When"],
-        ["A midway check-in reminder", "Partway through each phase"],
+        ["A midweek check-in reminder", "Partway through each phase"],
         ["An overdue notice", "If a phase passes its due date unfinished"],
         ["(Your manager) a completion notice", "Each time you finish a phase"],
       ], [CONTENT_W-2.3*inch, 2.3*inch]),
@@ -264,7 +264,7 @@ def build():
           ["Trailhead (home)", "The map of all nine phases and your overall progress."],
           ["A phase page", "The task cards for that phase."],
           ["A task page", "Learn, Practice, Assess and Apply for one topic."],
-          ["My Timeline", "Your phase dates: started, midway check-in, due."],
+          ["My Timeline", "Your phase dates: started, midweek check-in, due."],
           ["Gear Room", "Links, tools and reference material."],
           ["Sidebar footer", "Who you are signed in as, and the sign-out link."],
         ], [1.55*inch, CONTENT_W-1.55*inch]),
@@ -312,7 +312,7 @@ def build():
       table([
         ["Tab", "What it does"],
         ["Team", "Every employee with their phase progress. Click <b>Timeline</b> on anyone to "
-                 "set their start, due and midway dates from date pickers, or use "
+                 "set their start, due and midweek dates from date pickers, or use "
                  "<b>Postpone remaining by a week</b> to shift everything unfinished at once."],
         ["People", "Names, emails, roles, and which manager each person's alerts go to."],
         ["Alerts", "The reminder rules: on/off, days, time, who receives them, and the message "
@@ -323,9 +323,10 @@ def build():
       P("<b>Opening a phase early.</b> Phases normally unlock in order, but in the Timeline "
         "view each phase has an <b>Unlocked</b> tick box — tick it and that phase opens for "
         "that person immediately, whether or not the previous one is finished. "
-        "<b>Unlock all phases</b> does the lot. At the top of the Team tab, <b>Your own "
-        "access</b> does the same for your own account, which is how you look ahead to review "
-        "or edit content in later phases.", "body"),
+        "Each phase is independent, so you can open just one. <b>Unlock all phases</b> is "
+        "there if you want the lot. At the top of the Team tab, <b>Your own access</b> gives "
+        "you the same per-phase control over your own account — click any phase to open it "
+        "for yourself, which is how you look ahead to review or edit later content.", "body"),
       Spacer(1, 9),
 
       KeepTogether([

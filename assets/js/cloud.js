@@ -40,7 +40,7 @@
         localStorage.setItem("expedition_timing_" + t.phase_id, JSON.stringify({
           startedAt: t.started_at, completedAt: t.completed_at,
           completeNotified: !!t.complete_notified,
-          midwayNotified: !!t.midway_notified_at,
+          midweekNotified: !!t.midweek_notified_at,
           forceUnlocked: !!t.force_unlocked
         }));
       } catch (e) {}

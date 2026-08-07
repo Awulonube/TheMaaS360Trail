@@ -11,7 +11,7 @@
    Timeline model (chosen: "auto-start each phase"):
      - A phase's clock starts the first time it is unlocked (startedAt).
      - Target duration is 7 days (PHASE_DURATION_DAYS).
-     - Midway checkpoint fires MIDWAY_DAYS (3.5) days after start.
+     - Midweek checkpoint fires MIDWEEK_DAYS (3.5) days after start.
    ===================================================================== */
 (function () {
   "use strict";
@@ -21,7 +21,7 @@
   var DAY_MS = 24 * 60 * 60 * 1000;
 
   var PHASE_DURATION_DAYS = 7;   // ~one week per phase
-  var MIDWAY_DAYS = 3.5;        // midway checkup
+  var MIDWEEK_DAYS = 3.5;        // midweek checkup
 
   function freshProfile() {
     return {
@@ -71,7 +71,7 @@
       startedAt: null,        // ISO string; set when phase first unlocked
       completedAt: null,      // ISO string; set when phase hits 100%
       completeNotified: false,
-      midwayNotified: false,
+      midweekNotified: false,
       forceUnlocked: false      // manager opened this phase early
     };
   }
@@ -87,7 +87,7 @@
       base.startedAt = t.startedAt || null;
       base.completedAt = t.completedAt || null;
       base.completeNotified = !!t.completeNotified;
-      base.midwayNotified = !!t.midwayNotified;
+      base.midweekNotified = !!t.midweekNotified;
       base.forceUnlocked = !!t.forceUnlocked;
       return base;
     } catch (e) {
@@ -115,17 +115,17 @@
   function getSchedule(phaseId) {
     var t = getTiming(phaseId);
     if (!t.startedAt) {
-      return { started: null, midway: null, due: null, midwayDue: false, overdue: false, daysLeft: null };
+      return { started: null, midweek: null, due: null, midweekDue: false, overdue: false, daysLeft: null };
     }
     var start = new Date(t.startedAt).getTime();
-    var midway = start + MIDWAY_DAYS * DAY_MS;
+    var midweek = start + MIDWEEK_DAYS * DAY_MS;
     var due = start + PHASE_DURATION_DAYS * DAY_MS;
     var now = Date.now();
     return {
       started: new Date(start),
-      midway: new Date(midway),
+      midweek: new Date(midweek),
       due: new Date(due),
-      midwayDue: now >= midway,
+      midweekDue: now >= midweek,
       overdue: now >= due && !t.completedAt,
       daysLeft: Math.ceil((due - now) / DAY_MS)
     };
@@ -133,7 +133,7 @@
 
   window.Profile = {
     PHASE_DURATION_DAYS: PHASE_DURATION_DAYS,
-    MIDWAY_DAYS: MIDWAY_DAYS,
+    MIDWEEK_DAYS: MIDWEEK_DAYS,
     getProfile: getProfile,
     saveProfile: saveProfile,
     isConfigured: isConfigured,

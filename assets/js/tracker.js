@@ -3,7 +3,7 @@
    Responsibilities:
      1. Auto-start each phase's week the first time it becomes unlocked.
      2. Detect when a phase reaches 100% -> email the manager (once).
-     3. Detect when a phase's midway checkpoint is due -> email hire +
+     3. Detect when a phase's midweek checkpoint is due -> email hire +
         manager (once), and surface an in-app reminder.
      4. Render a dismissible reminder banner for anything currently due.
 
@@ -47,9 +47,9 @@
       if (s.overdue) {
         out.push({ phaseId: id, type: "overdue", title: titleOf(id),
           text: titleOf(id) + " is past its 1-week target and still at " + pct + "%." });
-      } else if (s.midwayDue) {
-        out.push({ phaseId: id, type: "midway", title: titleOf(id),
-          text: "Midway check-in for " + titleOf(id) + " — " + pct + "% done, " +
+      } else if (s.midweekDue) {
+        out.push({ phaseId: id, type: "midweek", title: titleOf(id),
+          text: "Midweek check-in for " + titleOf(id) + " — " + pct + "% done, " +
                 (s.daysLeft > 0 ? s.daysLeft + " day" + (s.daysLeft === 1 ? "" : "s") + " left." : "week wrapping up.") });
       }
     }
@@ -84,7 +84,7 @@
       // 2. Phase complete -> stamp completion (cloud scheduler emails the manager).
       if (pct === 100) {
         if (!t.completedAt) Profile.setTiming(id, { completedAt: new Date().toISOString() });
-        continue; // done phases don't need midway nudges
+        continue; // done phases don't need midweek nudges
       }
     }
   }

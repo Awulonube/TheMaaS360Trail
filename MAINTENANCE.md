@@ -83,7 +83,7 @@ content/README.md          Content-format documentation
 
 supabase/schema.sql            Main database schema (re-run-safe)
 supabase/content-overrides.sql Content-override table (re-run-safe)
-supabase/migrate-midway-and-unlock.sql  One-off migration (see below)
+supabase/migrate-unlock.sql    One-off migration: adds manual unlocking
 supabase/functions/alert-scheduler/index.ts   The email scheduler
 supabase/SETUP-GUIDE.md        Cloud setup walk-through
 ```
@@ -109,12 +109,13 @@ GitHub. Every published version is recoverable.
 
 **Change alert timing/recipients/wording:** Dashboard → Alerts tab. No code.
 
-**Open a phase early:** Dashboard → Team → Timeline → tick **Unlocked** on that
-phase, or use **Unlock all phases**. "Your own access" at the top of the Team
-tab does the same for the manager's own account.
+**Open a phase early:** Dashboard → Team → Timeline → tick **Unlocked** on the
+specific phase (one at a time; **Unlock all phases** is there for convenience).
+"Your own access" at the top of the Team tab has the same per-phase control for
+the manager's own account.
 
 **Adjust someone's schedule:** Dashboard → Team tab → Timeline. Pick the
-start, due and midway dates directly from date pickers — no arithmetic.
+start, due and midweek dates directly from date pickers — no arithmetic.
 "Postpone remaining by a week" shifts every unfinished phase in one click.
 Changing a date reschedules that phase's reminder emails automatically.
 

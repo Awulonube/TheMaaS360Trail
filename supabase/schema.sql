@@ -52,10 +52,10 @@ create table if not exists public.phase_timeline (
   phase_id text not null,
   started_at timestamptz,            -- when the phase clock started (manager-editable)
   duration_days numeric not null default 7,
-  midway_days numeric not null default 3.5,
+  midweek_days numeric not null default 3.5,
   completed_at timestamptz,
   complete_notified boolean not null default false,
-  midway_notified_at timestamptz,   -- last midway email for this phase
+  midweek_notified_at timestamptz,   -- last midweek email for this phase
   force_unlocked boolean not null default false,  -- manager opened this phase early
   overdue_notified_at timestamptz,   -- last overdue email for this phase
   updated_at timestamptz not null default now(),
@@ -65,18 +65,18 @@ create table if not exists public.phase_timeline (
 -- ---------- 4. Alert rules (the configurable schedule) ----------
 -- rule_type:
 --   'digest'         -> progress summary of ALL employees to managers/recipients
---   'midway'        -> reminder to employees mid-phase (and their manager)
+--   'midweek'        -> reminder to employees mid-phase (and their manager)
 --   'overdue'        -> phases past due date -> employee + manager
 --   'phase_complete' -> unnotified completions -> manager (checked every scheduler run)
 --   'custom'         -> fixed message to recipients on the schedule
 -- schedule jsonb: {"days":[1,2,3,4,5], "hour":9, "minute":0, "tz":"America/New_York"}
 --   days: 0=Sunday..6=Saturday. phase_complete ignores schedule (fires each run when enabled).
--- repeat_policy: 'once_per_phase' | 'every_match'  (midway/overdue: how often to remind)
+-- repeat_policy: 'once_per_phase' | 'every_match'  (midweek/overdue: how often to remind)
 create table if not exists public.alert_rules (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   enabled boolean not null default true,
-  rule_type text not null check (rule_type in ('digest','midway','overdue','phase_complete','custom')),
+  rule_type text not null check (rule_type in ('digest','midweek','overdue','phase_complete','custom')),
   schedule jsonb not null default '{"days":[1,2,3,4,5],"hour":9,"minute":0,"tz":"UTC"}'::jsonb,
   recipients text not null default 'managers' check (recipients in ('managers','employees','both','custom')),
   extra_emails text not null default '',           -- comma-separated, used when recipients='custom' (or appended)
@@ -144,9 +144,9 @@ create policy "log_select_mgr" on public.email_log for select using (public.is_m
 insert into public.alert_rules (name, enabled, rule_type, schedule, recipients, subject_template, body_template, repeat_policy)
 select name, enabled, rule_type, schedule::jsonb, recipients, subject_template, body_template, repeat_policy
 from (values
- ('Midway check-in',        true,  'midway',        '{"days":[3],"hour":9,"minute":0,"tz":"America/New_York"}',  'both',
-  'Midway check-in — {{phase}}',
-  'Hi {{name}}, midway check-in on "{{phase}}": {{percent}}% done, {{days_left}} day(s) left this week. Review remaining tasks and flag blockers.', 'once_per_phase'),
+ ('Midweek check-in',        true,  'midweek',        '{"days":[3],"hour":9,"minute":0,"tz":"America/New_York"}',  'both',
+  'Midweek check-in — {{phase}}',
+  'Hi {{name}}, midweek check-in on "{{phase}}": {{percent}}% done, {{days_left}} day(s) left this week. Review remaining tasks and flag blockers.', 'once_per_phase'),
  ('Overdue phase alert',     true,  'overdue',        '{"days":[1,2,3,4,5],"hour":9,"minute":0,"tz":"America/New_York"}', 'both',
   'Phase overdue — {{phase}}',
   '{{name}}''s phase "{{phase}}" is past its target ({{percent}}% complete, due {{due}}).', 'once_per_phase'),
