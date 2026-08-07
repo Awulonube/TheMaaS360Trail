@@ -186,6 +186,12 @@ def build():
         "where you are.", BLUEBG, BLUE),
       Spacer(1, 12),
 
+      callout("Nothing to install",
+              "A web browser and the site link is all you need — no app, no plug-in, nothing "
+              "to set up. Chrome, Safari, Edge and Firefox all work, and so do phones and "
+              "tablets.", GREENBG, GREEN),
+      Spacer(1, 8),
+
       P("1. Create your account", "h2"),
       N(1, "Open the site link your manager sent you and choose <b>Create account</b>."),
       N(2, "Enter your name, work email, and a password of at least eight characters. "

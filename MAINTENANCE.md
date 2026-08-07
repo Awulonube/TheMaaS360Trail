@@ -93,6 +93,21 @@ content/tools/make_user_guide_pdf.py     Regenerates the employee guide
 content/tools/make_manager_guide_pdf.py  Regenerates the manager guide
 ```
 
+## What has to be installed
+
+Nothing, for people *using* the site — employees and managers only need a
+browser. Supabase is a website (supabase.com), not an application.
+
+Only the maintainer's machine needs tools, and only for specific jobs:
+
+| Tool | Needed for | Skip it if |
+|---|---|---|
+| Git | Publishing any change | You never edit files |
+| A code editor | Editing content or code | — |
+| [Node.js](https://nodejs.org) | `node content/tools/build.js` (rebuild from Markdown) | You only edit via the browser |
+| [Supabase CLI](https://supabase.com/docs/guides/cli) | Deploying the alert-scheduler function | It's already deployed |
+| Python 3 + `reportlab`, `cairosvg`, `pypdf` | Regenerating the PDF guides and diagrams | You don't need to change them |
+
 ## Routine operations
 
 **Publish a change** (after editing files locally):

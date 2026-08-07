@@ -186,6 +186,25 @@ def build():
         "live for everyone immediately.", GOLDBG, GOLD),
       Spacer(1, 12),
 
+      callout("Nothing to install for day-to-day use",
+              "Everything in this guide — editing tasks, schedules, unlocking, alerts, roles — "
+              "happens in a web browser. There is no app to download.", GREENBG, GREEN),
+      Spacer(1, 10),
+
+      P("What you need access to", "h2"),
+      table([
+        ["Who", "What they need", "Install anything?"],
+        ["A new hire", "A browser and the site link.", "No"],
+        ["A manager", "A browser, plus a manager account on the site.", "No"],
+        ["Whoever does the one-time database setup",
+         "A free <b>Supabase</b> account. Supabase is a website you sign in to at "
+         "supabase.com — it is <b>not</b> a program you download.", "No"],
+        ["Whoever maintains the site files",
+         "Git and a code editor; Node.js only if rebuilding content from the Markdown files.",
+         "Yes, on their machine only"],
+      ], [1.5*inch, CONTENT_W-3.05*inch, 1.55*inch]),
+      Spacer(1, 8),
+
       P("Editing a task", "h2"),
       P("Sign in as a manager and open any task page. A <b>Edit this task</b> button appears "
         "in the bottom-right corner; it opens a panel of plain text boxes.", "body"),

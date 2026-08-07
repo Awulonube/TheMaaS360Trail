@@ -50,6 +50,23 @@ JavaScript** — no framework, no build step, no npm install. Everything that
 changes lives in one Supabase project. Either half can be replaced without
 touching the other.
 
+## What you need to install
+
+**Nothing, for anyone using the site.** New hires and managers need a web
+browser and the link — no app, no plug-in, no account beyond the site's own
+sign-in.
+
+**Supabase is a website, not a download.** You sign in at
+[supabase.com](https://supabase.com); there is nothing to install. Only the
+person doing the one-time cloud setup needs a (free) account there.
+
+| Role | Needs | Install anything? |
+|---|---|---|
+| New hire | Browser + site link | **No** |
+| Manager | Browser + a manager account on the site | **No** |
+| One-time cloud setup | A free Supabase account (web) | **No** |
+| Site maintainer | Git, a code editor, and [Node.js](https://nodejs.org) to rebuild content; the [Supabase CLI](https://supabase.com/docs/guides/cli) *only* to deploy the email scheduler; Python 3 + `reportlab` *only* to regenerate the PDFs | Yes, on their own machine |
+
 ## Quick start
 
 **Run it locally** — double-click `Start Website.command` (macOS), or:
