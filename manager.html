@@ -48,6 +48,7 @@
   .tag { font-size: 11px; padding: 2px 9px; border-radius: 999px; background: rgba(106,160,255,.14); color: var(--color-accent-blue); white-space: nowrap; }
   .tag.gold { background: rgba(251,191,36,.14); color: var(--color-summit-gold); }
   .tag.dim { background: rgba(154,166,212,.12); color: var(--color-text-dim); }
+  .tag.late { background: rgba(247,120,85,.18); color: #f77855; }
 
   /* rule cards */
   .rule-card { background: var(--color-card); border: 1px solid var(--color-line); border-radius: var(--radius);
@@ -104,7 +105,28 @@
   function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
   function gate(html){ app.innerHTML = '<div class="gate setup-card">'+html+'</div>'; }
   function fmtD(x){ if(!x) return "—"; try{ return new Date(x).toLocaleDateString(undefined,{month:"short",day:"numeric"});}catch(e){return "—";} }
-  function dstr(x){ if(!x) return ""; try{ return new Date(x).toISOString().slice(0,10);}catch(e){return "";} }
+  // Local-date string for <input type="date"> (avoids the UTC off-by-one
+  // that toISOString() causes for anyone west of Greenwich).
+  function dstr(x){
+    if(!x) return "";
+    try{
+      var d = new Date(x);
+      return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+    }catch(e){ return ""; }
+  }
+  var DAY = 86400000;
+  // start date + N days -> yyyy-mm-dd (blank if there's no start yet)
+  function plusDays(startIso, days){
+    if(!startIso) return "";
+    return dstr(new Date(new Date(startIso).getTime() + (days||0) * DAY));
+  }
+  // whole days between two yyyy-mm-dd values (can be fractional-safe)
+  function daysBetween(startIso, dateStr){
+    if(!startIso || !dateStr) return null;
+    var start = new Date(startIso).getTime();
+    var end = new Date(dateStr + "T09:00:00").getTime();
+    return Math.round(((end - start) / DAY) * 2) / 2;   // nearest half-day
+  }
 
   if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY || !window.supabase) {
     return gate('<p class="page-title">📊 Manager Dashboard</p><p class="hint">Cloud sync isn\'t configured. Fill in <b>assets/js/cloud-config.js</b> first (see supabase/SETUP-GUIDE.md).</p><p><a class="breadcrumb" href="index.html">← Back</a></p>');
@@ -222,13 +244,22 @@
         var pct = phasePct(e.id,pid);
         return '<div class="emp-bar'+(pct===100?" done":"")+'" title="'+PHASE_SHORT[pid]+' · '+pct+'%"><i style="height:'+pct+'%"></i></div>';
       }).join("");
+      var now = Date.now();
       var rows = PHASES.map(function(pid){
         var t = timelineOf(e.id,pid) || {};
-        return '<tr><td>'+PHASE_SHORT[pid]+' · '+PHASE_NAME[pid]+'</td><td>'+phasePct(e.id,pid)+'%</td>' +
-          '<td><input class="mini-input" type="date" data-emp="'+e.id+'" data-phase="'+pid+'" data-k="started_at" value="'+dstr(t.started_at)+'"></td>' +
-          '<td><input class="mini-input narrow" type="number" step="0.5" min="1" data-emp="'+e.id+'" data-phase="'+pid+'" data-k="duration_days" value="'+(t.duration_days!=null?t.duration_days:7)+'"></td>' +
-          '<td><input class="mini-input narrow" type="number" step="0.5" min="0.5" data-emp="'+e.id+'" data-phase="'+pid+'" data-k="midweek_days" value="'+(t.midweek_days!=null?t.midweek_days:3.5)+'"></td>' +
-          '<td>'+fmtD(t.completed_at)+'</td></tr>';
+        var dur = t.duration_days != null ? t.duration_days : 7;
+        var mid = t.midweek_days != null ? t.midweek_days : 3.5;
+        var dueVal = plusDays(t.started_at, dur);
+        var midVal = plusDays(t.started_at, mid);
+        // flag rows that are past due and unfinished
+        var late = t.started_at && !t.completed_at &&
+                   now > new Date(t.started_at).getTime() + dur * DAY;
+        return '<tr'+(late?' class="dash-row overdue"':'')+'>' +
+          '<td>'+PHASE_SHORT[pid]+' · '+PHASE_NAME[pid]+'</td><td>'+phasePct(e.id,pid)+'%</td>' +
+          '<td><input class="mini-input" type="date" data-emp="'+e.id+'" data-phase="'+pid+'" data-k="start" value="'+dstr(t.started_at)+'"></td>' +
+          '<td><input class="mini-input" type="date" data-emp="'+e.id+'" data-phase="'+pid+'" data-k="due" value="'+dueVal+'"'+(t.started_at?'':' disabled title="Set a start date first"')+'></td>' +
+          '<td><input class="mini-input" type="date" data-emp="'+e.id+'" data-phase="'+pid+'" data-k="mid" value="'+midVal+'"'+(t.started_at?'':' disabled')+'></td>' +
+          '<td>'+(t.completed_at ? '<span class="tag">'+fmtD(t.completed_at)+'</span>' : (late?'<span class="tag late">overdue</span>':'—'))+'</td></tr>';
       }).join("");
       return '<div class="emp-row">' +
         '<div class="emp-id"><b>'+esc(e.full_name||e.email)+'</b><p class="hint">'+esc(e.email)+'</p></div>' +
@@ -240,10 +271,14 @@
         '</div>' +
         '<div class="emp-detail'+(openDetail[e.id]?" on":"")+'" id="det-'+e.id+'">' +
           '<div class="dash-scroll"><table class="dash-table">' +
-          '<thead><tr><th>Phase</th><th>%</th><th>Start</th><th>Days</th><th>Midweek</th><th>Done</th></tr></thead>' +
+          '<thead><tr><th>Phase</th><th>%</th><th>Start date</th><th>Due date</th><th>Midweek check-in</th><th>Completed</th></tr></thead>' +
           '<tbody>'+rows+'</tbody></table></div>' +
-          '<button class="btn-small" data-save-emp="'+e.id+'">💾 Save changes</button> ' +
-          '<span class="save-status" id="st-'+e.id+'"></span>' +
+          '<div class="btn-row" style="margin-top:10px;align-items:center">' +
+            '<button class="btn-small" data-save-emp="'+e.id+'">💾 Save dates</button>' +
+            '<button class="btn-small" data-shift-emp="'+e.id+'" title="Push every unfinished phase back by 7 days">↷ Postpone remaining by a week</button>' +
+            '<span class="save-status" id="st-'+e.id+'"></span>' +
+          '</div>' +
+          '<p class="hint" style="font-size:11.5px">Due dates drive the overdue alerts; the midweek check-in date drives the midweek reminder. Changing a date reschedules that phase\'s emails automatically.</p>' +
         '</div>' +
       '</div>';
     }).join("");
@@ -344,21 +379,83 @@
       btn.addEventListener("click", function () {
         var uid = btn.getAttribute("data-save-emp");
         var st = document.getElementById("st-"+uid);
-        var ups = PHASES.map(function (pid) {
+        var problem = null;
+        var ups = [];
+
+        PHASES.forEach(function (pid) {
           var q = function(k){ return app.querySelector('[data-emp="'+uid+'"][data-phase="'+pid+'"][data-k="'+k+'"]'); };
-          var started = q("started_at").value;
+          var startStr = q("start").value;
+          var dueStr = q("due").value;
+          var midStr = q("mid").value;
           var existing = timelineOf(uid,pid) || {};
-          return {
+          var startedIso = startStr ? new Date(startStr+"T09:00:00").toISOString() : null;
+
+          var dur = existing.duration_days != null ? existing.duration_days : 7;
+          var mid = existing.midweek_days != null ? existing.midweek_days : 3.5;
+
+          if (startedIso) {
+            if (dueStr) {
+              var d = daysBetween(startedIso, dueStr);
+              if (d == null || d <= 0) { problem = problem || (PHASE_SHORT[pid] + ": the due date must be after the start date."); return; }
+              dur = d;
+            }
+            if (midStr) {
+              var m = daysBetween(startedIso, midStr);
+              if (m == null || m <= 0) { problem = problem || (PHASE_SHORT[pid] + ": the midweek date must be after the start date."); return; }
+              if (m > dur) { problem = problem || (PHASE_SHORT[pid] + ": the midweek check-in can't fall after the due date."); return; }
+              mid = m;
+            }
+          }
+
+          ups.push({
             user_id: uid, phase_id: pid,
-            started_at: started ? new Date(started+"T09:00:00").toISOString() : null,
-            duration_days: parseFloat(q("duration_days").value)||7,
-            midweek_days: parseFloat(q("midweek_days").value)||3.5,
+            started_at: startedIso,
+            duration_days: dur,
+            midweek_days: mid,
             completed_at: existing.completed_at||null,
             complete_notified: existing.complete_notified||false,
+            // a rescheduled phase should be able to alert again
+            midweek_notified_at: null,
+            overdue_notified_at: null,
+            updated_at: new Date().toISOString()
+          });
+        });
+
+        if (problem) { st.textContent = problem; st.className = "save-status no"; return; }
+        st.textContent = "Saving…"; st.className = "save-status ok";
+        db.from("phase_timeline").upsert(ups).then(function (r) {
+          if (r.error) { st.textContent = "Error: "+r.error.message; st.className="save-status no"; }
+          else load();
+        });
+      });
+    });
+
+    // Postpone: push every unfinished phase's start (and therefore its due
+    // date) back by 7 days in one click.
+    app.querySelectorAll("[data-shift-emp]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var uid = btn.getAttribute("data-shift-emp");
+        var st = document.getElementById("st-"+uid);
+        if (!confirm("Push every unfinished phase back by 7 days?")) return;
+        var ups = PHASES.map(function (pid) {
+          var t = timelineOf(uid,pid) || {};
+          var started = t.started_at;
+          if (started && !t.completed_at) {
+            started = new Date(new Date(started).getTime() + 7 * DAY).toISOString();
+          }
+          return {
+            user_id: uid, phase_id: pid,
+            started_at: started || null,
+            duration_days: t.duration_days != null ? t.duration_days : 7,
+            midweek_days: t.midweek_days != null ? t.midweek_days : 3.5,
+            completed_at: t.completed_at || null,
+            complete_notified: t.complete_notified || false,
+            midweek_notified_at: null,
+            overdue_notified_at: null,
             updated_at: new Date().toISOString()
           };
         });
-        st.textContent = "Saving…"; st.className = "save-status ok";
+        st.textContent = "Rescheduling…"; st.className = "save-status ok";
         db.from("phase_timeline").upsert(ups).then(function (r) {
           if (r.error) { st.textContent = "Error: "+r.error.message; st.className="save-status no"; }
           else load();

@@ -108,7 +108,10 @@ GitHub. Every published version is recoverable.
 
 **Change alert timing/recipients/wording:** Dashboard → Alerts tab. No code.
 
-**Adjust someone's schedule:** Dashboard → Team tab → Timeline.
+**Adjust someone's schedule:** Dashboard → Team tab → Timeline. Pick the
+start, due and midweek dates directly from date pickers — no arithmetic.
+"Postpone remaining by a week" shifts every unfinished phase in one click.
+Changing a date reschedules that phase's reminder emails automatically.
 
 ## Annual / occasional maintenance
 
