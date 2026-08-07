@@ -9,24 +9,118 @@
 <body data-phase="gear-room">
 <div id="sidebar"></div>
 <main id="main-content"></main>
+
 <script src="assets/js/progress.js"></script>
-<script src="assets/data/phases-map.js"></script>
-<script src="assets/js/nav.js"></script>
 <script src="assets/js/profile.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="assets/js/cloud-config.js"></script>
 <script src="assets/js/cloud.js"></script>
+<script src="assets/data/phases-map.js"></script>
+<script src="assets/js/nav.js"></script>
 <script src="assets/js/tracker.js"></script>
 <script src="assets/js/content-editor.js"></script>
 <script>
-  Nav.init({ activePage: "gear-room", allPhasesMap: ALL_PHASES_MAP });
-  document.getElementById("main-content").innerHTML = "<div class=\"wrap\"><a class=\"breadcrumb\" href=\"index.html\">\u2190 Back to Trailhead</a><h1 class=\"page-title\">\ud83c\udf92 Gear Room</h1><p class=\"page-sub\">Every link and tool you need for the climb. Items marked as placeholders are awaiting real URLs.</p><div class=\"gear-group\"><p class=\"section-head\">IBM Documentation</p><div class=\"card-grid\"><a class=\"resource-card\" href=\"https://www.ibm.com/docs/en/maas360\" target=\"_blank\" rel=\"noopener\">IBM MaaS360 Docs <span class=\"ext\">open \u2197</span></a></div></div><div class=\"gear-group\"><p class=\"section-head\">Portals & Access</p><div class=\"card-grid\"><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 KME (Knox Mobile Enrollment) Portal]</div><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 ABM (Apple Business Manager) Portal]</div><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 Demo Hierarchy Portal]</div><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 MaaS360 \"M\" Portals]</div><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 Sales Cloud]</div></div></div><div class=\"gear-group\"><p class=\"section-head\">Productivity Tools</p><div class=\"card-grid\"><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 1Password]</div><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 Slack Workspace]</div><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 Outlook]</div></div></div><div class=\"gear-group\"><p class=\"section-head\">Training Resources</p><div class=\"card-grid\"><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 Salesloft]</div><div class=\"placeholder-block\">[PLACEHOLDER: Portal link \u2014 Internal Training Library]</div></div></div><div class=\"danger-zone\"><p class=\"section-head\">Danger zone</p><p class=\"hint\">This clears all your saved expedition progress on this browser.</p><button class=\"btn-danger\" id=\"reset-btn\">\u21ba Reset All Progress</button></div></div>";
+Nav.init({ activePage: "gear-room", allPhasesMap: ALL_PHASES_MAP });
+
+/* =====================================================================
+   Gear Room links.
+
+   TO ADD OR CHANGE A LINK: edit the GEAR list below. Each entry is
+     { name, url, note }
+   Leave `url` empty ("") and the card renders as a clearly-marked
+   placeholder instead of a dead link — so nothing here is ever broken.
+   ===================================================================== */
+var GEAR = [
+  {
+    group: "IBM documentation",
+    items: [
+      { name: "IBM MaaS360 Documentation", url: "https://www.ibm.com/docs/en/maas360",
+        note: "The product reference behind every Learn card." },
+      { name: "IBM MaaS360 Support", url: "https://www.ibm.com/mysupport/",
+        note: "Open and track support cases." }
+    ]
+  },
+  {
+    group: "Device enrollment portals",
+    items: [
+      { name: "Apple Business Manager", url: "https://business.apple.com",
+        note: "Automated device enrollment and Apps & Books for Apple devices." },
+      { name: "Knox Mobile Enrollment (KME)", url: "https://kme.samsungknox.com",
+        note: "Samsung zero-touch enrollment for corporate Android." },
+      { name: "Android zero-touch", url: "https://partner.android.com/zerotouch",
+        note: "Google's zero-touch enrollment portal." },
+      { name: "Apple Push Certificates Portal", url: "https://identity.apple.com/pushcert",
+        note: "Where the APNs certificate is created and renewed each year." }
+    ]
+  },
+  {
+    group: "Day-to-day tools",
+    items: [
+      { name: "Outlook on the web", url: "https://outlook.office.com",
+        note: "Mail, calendar and the Scheduling Assistant." },
+      { name: "Salesloft", url: "https://app.salesloft.com",
+        note: "Cadences and logged customer activity." },
+      { name: "1Password", url: "",
+        note: "Your team's vault — ask your manager for the sign-in link." },
+      { name: "Slack workspace", url: "",
+        note: "Ask your manager for the workspace link and required channels." }
+    ]
+  },
+  {
+    group: "MaaS360 environments",
+    items: [
+      { name: "MaaS360 portal (\"M\" portal)", url: "",
+        note: "Instance-specific — ask your manager which portal your account uses." },
+      { name: "Demo hierarchy", url: "",
+        note: "The team's shared demo account. Ask your manager for access." },
+      { name: "Sales Cloud / CRM", url: "",
+        note: "Where opportunities live. Ask your manager for the link." },
+      { name: "Internal training library", url: "",
+        note: "Ask your manager for the current location." }
+    ]
+  }
+];
+
+(function () {
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  var html = '<div class="wrap">' +
+    '<a class="breadcrumb" href="index.html">← Back to Trailhead</a>' +
+    '<h1 class="page-title">🎒 Gear Room</h1>' +
+    '<p class="page-sub">Every tool and portal you need for the climb. Links open in a new tab.</p>';
+
+  GEAR.forEach(function (g) {
+    html += '<div class="gear-group"><p class="section-head">' + esc(g.group) + '</p><div class="card-grid">';
+    g.items.forEach(function (it) {
+      if (it.url) {
+        html += '<a class="resource-card" href="' + esc(it.url) + '" target="_blank" rel="noopener">' +
+                '<span class="rc-name">' + esc(it.name) + ' <span class="ext">open ↗</span></span>' +
+                '<span class="rc-note">' + esc(it.note) + '</span></a>';
+      } else {
+        html += '<div class="resource-card pending">' +
+                '<span class="rc-name">' + esc(it.name) + ' <span class="rc-tag">link needed</span></span>' +
+                '<span class="rc-note">' + esc(it.note) + '</span></div>';
+      }
+    });
+    html += '</div></div>';
+  });
+
+  html += '<div class="danger-zone"><p class="section-head">Danger zone</p>' +
+    '<p class="hint">This clears the expedition progress saved in this browser. If you are ' +
+    'signed in, your cloud progress is not affected — sign out first if you want a clean slate.</p>' +
+    '<button class="btn-danger" id="reset-btn">↺ Reset local progress</button></div></div>';
+
+  document.getElementById("main-content").innerHTML = html;
   document.getElementById("reset-btn").addEventListener("click", function () {
-    if (confirm("Reset ALL expedition progress on this browser? This cannot be undone.")) {
+    if (confirm("Reset the expedition progress stored in this browser? This cannot be undone.")) {
       Progress.resetAllProgress();
       location.reload();
     }
   });
+})();
 </script>
 </body>
 </html>
