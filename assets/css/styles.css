@@ -37,7 +37,10 @@
 }
 
 * { box-sizing: border-box; }
-html, body { height: 100%; }
+/* min-height (not height) so the page grows with content; the html element
+   carries the same base colour so no light band can ever appear below the
+   fold when a panel expands. */
+html { min-height: 100%; background: var(--color-bg-2); }
 
 body {
   margin: 0;
@@ -52,6 +55,8 @@ body {
     radial-gradient(1100px 540px at 78% -8%, rgba(120,150,255,.14), transparent 60%),
     radial-gradient(800px 420px at 12% 0%, rgba(80,200,180,.08), transparent 55%),
     linear-gradient(180deg, var(--color-bg) 0%, var(--color-bg-2) 75%, #04060f 100%);
+  background-attachment: fixed;
+  background-color: var(--color-bg-2);
 }
 
 /* ---------- Global star field (fixed, twinkling) ---------- */
