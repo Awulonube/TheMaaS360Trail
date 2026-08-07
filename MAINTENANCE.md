@@ -86,6 +86,11 @@ supabase/content-overrides.sql Content-override table (re-run-safe)
 supabase/migrate-unlock.sql    One-off migration: adds manual unlocking
 supabase/functions/alert-scheduler/index.ts   The email scheduler
 supabase/SETUP-GUIDE.md        Cloud setup walk-through
+
+MaaS360-Expedition-Guide-Employees.pdf   Hand to new hires
+MaaS360-Expedition-Guide-Managers.pdf    Hand to managers
+content/tools/make_user_guide_pdf.py     Regenerates the employee guide
+content/tools/make_manager_guide_pdf.py  Regenerates the manager guide
 ```
 
 ## Routine operations

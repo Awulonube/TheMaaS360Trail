@@ -1,0 +1,322 @@
+#!/usr/bin/env python3
+"""make_manager_guide_pdf.py — builds MaaS360-Expedition-Guide-Managers.pdf
+
+The manager guide: editing content, schedules, unlocking, alerts, roles.
+
+All prose flows through ReportLab's layout engine and every diagram box is
+sized from measured text, so nothing can clip or overflow.
+
+    pip install reportlab      (once)
+    python3 content/tools/make_manager_guide_pdf.py
+"""
+import os
+from reportlab.lib.pagesizes import LETTER
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.enums import TA_LEFT
+from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.platypus import (BaseDocTemplate, PageTemplate, Frame, Paragraph,
+                                Spacer, Flowable, Table, TableStyle, PageBreak,
+                                KeepTogether)
+
+ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
+OUT = os.path.join(ROOT, "MaaS360-Expedition-Guide-Managers.pdf")
+
+NAVY   = colors.HexColor("#0f1a3d")
+INK    = colors.HexColor("#1c2440")
+BODY   = colors.HexColor("#333a52")
+DIM    = colors.HexColor("#5f6885")
+GOLD   = colors.HexColor("#b3830c")
+GOLDBG = colors.HexColor("#fdf5e0")
+BLUE   = colors.HexColor("#2c5fb8")
+BLUEBG = colors.HexColor("#eaf1fc")
+GREEN  = colors.HexColor("#1f7a55")
+GREENBG= colors.HexColor("#e8f6ef")
+LINE   = colors.HexColor("#c9d1e4")
+SOFT   = colors.HexColor("#f5f7fc")
+CODEBG = colors.HexColor("#f2f4f9")
+
+F, FB, FM = "Helvetica", "Helvetica-Bold", "Courier"
+
+def S(name, **kw):
+    base = dict(fontName=F, fontSize=9.8, leading=13.6, textColor=BODY,
+                spaceAfter=6, alignment=TA_LEFT)
+    base.update(kw); return ParagraphStyle(name, **base)
+
+ST = {
+ "h1":     S("h1",     fontName=FB, fontSize=16, leading=20, textColor=NAVY, spaceAfter=3),
+ "kick":   S("kick",   fontName=FB, fontSize=9.5, leading=12, textColor=GOLD, spaceAfter=2),
+ "h2":     S("h2",     fontName=FB, fontSize=12, leading=15.5, textColor=NAVY,
+                        spaceBefore=11, spaceAfter=4),
+ "h3":     S("h3",     fontName=FB, fontSize=10, leading=13, textColor=INK,
+                        spaceBefore=7, spaceAfter=2),
+ "body":   S("body"),
+ "small":  S("small",  fontSize=8.8, leading=12, textColor=DIM),
+ "bullet": S("bullet", leftIndent=12, bulletIndent=2, spaceAfter=3.5),
+ "cellh":  S("cellh",  fontName=FB, fontSize=8.8, leading=11.6, textColor=NAVY, spaceAfter=0),
+ "cell":   S("cell",   fontSize=8.8, leading=11.8, textColor=BODY, spaceAfter=0),
+ "note":   S("note",   fontSize=9.2, leading=12.8, textColor=INK, spaceAfter=0),
+ "code":   S("code",   fontName=FM, fontSize=8.6, leading=12, textColor=NAVY, spaceAfter=0),
+}
+def P(t, s="body"): return Paragraph(t, ST[s])
+def B(t):           return Paragraph(t, ST["bullet"], bulletText="•")
+def N(i, t):        return Paragraph(t, ST["bullet"], bulletText="%d." % i)
+
+PAGE_W, PAGE_H = LETTER
+MARGIN = 0.78 * inch
+CONTENT_W = PAGE_W - 2 * MARGIN
+
+def on_page(canv, doc):
+    canv.saveState()
+    canv.setFont(F, 7.8); canv.setFillColor(DIM)
+    canv.drawString(MARGIN, 0.46 * inch, "MaaS360 Expedition — Guide for Managers")
+    canv.drawRightString(PAGE_W - MARGIN, 0.46 * inch, "Page %d" % doc.page)
+    canv.setStrokeColor(LINE); canv.setLineWidth(0.5)
+    canv.line(MARGIN, 0.62 * inch, PAGE_W - MARGIN, 0.62 * inch)
+    canv.restoreState()
+
+# ---------- helpers ----------
+def wrap(text, font, size, maxw):
+    words, lines, cur = text.split(), [], ""
+    for w in words:
+        t = (cur + " " + w).strip()
+        if stringWidth(t, font, size) <= maxw: cur = t
+        else:
+            if cur: lines.append(cur)
+            cur = w
+    if cur: lines.append(cur)
+    return lines
+
+class Diagram(Flowable):
+    def __init__(self, width, height, fn):
+        Flowable.__init__(self); self.width = width; self.height = height; self.fn = fn
+    def draw(self): self.fn(self.canv, self.width, self.height)
+
+def draw_box(c, x, y, w, h, title, lines, fill, stroke, tsize=9.4, lsize=8.0):
+    c.setFillColor(fill); c.setStrokeColor(stroke); c.setLineWidth(1.1)
+    c.roundRect(x, y, w, h, 6, stroke=1, fill=1)
+    pad = 7; inner = w - 2 * pad
+    tl = wrap(title, FB, tsize, inner) if title else []
+    bl = []
+    for ln in lines: bl.extend(wrap(ln, F, lsize, inner))
+    total = len(tl)*(tsize+2.3) + (3 if tl and bl else 0) + len(bl)*(lsize+2.3)
+    cy = y + h/2 + total/2 - tsize
+    c.setFillColor(stroke); c.setFont(FB, tsize)
+    for ln in tl: c.drawCentredString(x+w/2, cy, ln); cy -= (tsize+2.3)
+    if tl and bl: cy -= 3
+    c.setFillColor(BODY); c.setFont(F, lsize)
+    for ln in bl: c.drawCentredString(x+w/2, cy, ln); cy -= (lsize+2.3)
+
+def arrow(c, x1, y1, x2, y2, col=DIM):
+    import math
+    c.setStrokeColor(col); c.setLineWidth(1.2); c.line(x1, y1, x2, y2)
+    a = math.atan2(y2-y1, x2-x1); L, S_ = 6.5, 0.42
+    c.setFillColor(col); p = c.beginPath(); p.moveTo(x2, y2)
+    p.lineTo(x2-L*math.cos(a-S_), y2-L*math.sin(a-S_))
+    p.lineTo(x2-L*math.cos(a+S_), y2-L*math.sin(a+S_)); p.close()
+    c.drawPath(p, stroke=0, fill=1)
+
+def diagram_task(c, W, H):
+    n, gap = 4, 12
+    bw = (W - gap*(n-1))/n; bh = 88; y = H - bh - 4
+    items = [("LEARN",   ["Read the cards.","Open each to","mark it read."], BLUEBG, BLUE),
+             ("PRACTICE",["Do the steps for","real, ticking","each as you go."], GREENBG, GREEN),
+             ("ASSESS",  ["Short quiz.","70% to pass.","Retake freely."], GOLDBG, GOLD),
+             ("APPLY",   ["A real scenario.","Mark done when","you've done it."], SOFT, INK)]
+    for i,(t,ls,f,s) in enumerate(items):
+        x = i*(bw+gap); draw_box(c, x, y, bw, bh, t, ls, f, s)
+        if i < n-1: arrow(c, x+bw+1, y+bh/2, x+bw+gap-1, y+bh/2)
+
+def table(rows, widths, header=True):
+    data = [[Paragraph(cell, ST["cellh"] if (header and r==0) else ST["cell"]) for cell in row]
+            for r, row in enumerate(rows)]
+    t = Table(data, colWidths=widths, hAlign="LEFT")
+    st = [("VALIGN",(0,0),(-1,-1),"TOP"),
+          ("TOPPADDING",(0,0),(-1,-1),5),("BOTTOMPADDING",(0,0),(-1,-1),5),
+          ("LEFTPADDING",(0,0),(-1,-1),7),("RIGHTPADDING",(0,0),(-1,-1),7),
+          ("LINEBELOW",(0,0),(-1,-2),0.4,LINE),("BOX",(0,0),(-1,-1),0.6,LINE)]
+    if header: st += [("BACKGROUND",(0,0),(-1,0),SOFT),("LINEBELOW",(0,0),(-1,0),0.8,LINE)]
+    t.setStyle(TableStyle(st)); return t
+
+def callout(title, text, tint=GOLDBG, edge=GOLD):
+    t = Table([[Paragraph("<b>%s</b>" % title, ST["note"])],
+               [Paragraph(text, ST["note"])]], colWidths=[CONTENT_W-4], hAlign="LEFT")
+    t.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),tint),("BOX",(0,0),(-1,-1),0.9,edge),
+        ("LEFTPADDING",(0,0),(-1,-1),10),("RIGHTPADDING",(0,0),(-1,-1),10),
+        ("TOPPADDING",(0,0),(0,0),8),("BOTTOMPADDING",(0,0),(0,0),1),
+        ("TOPPADDING",(0,1),(0,1),0),("BOTTOMPADDING",(0,1),(-1,-1),8)]))
+    return t
+
+def code(text):
+    t = Table([[Paragraph(text, ST["code"])]], colWidths=[CONTENT_W-4], hAlign="LEFT")
+    t.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),CODEBG),("BOX",(0,0),(-1,-1),0.6,LINE),
+        ("LEFTPADDING",(0,0),(-1,-1),10),("RIGHTPADDING",(0,0),(-1,-1),10),
+        ("TOPPADDING",(0,0),(-1,-1),8),("BOTTOMPADDING",(0,0),(-1,-1),8)]))
+    return t
+
+def section_header(kicker, title, blurb, tint, edge):
+    """Compact banner — replaces a mostly-blank cover page."""
+    inner = [[Paragraph(kicker, ST["kick"])],
+             [Paragraph(title, ST["h1"])],
+             [Paragraph(blurb, ST["note"])]]
+    t = Table(inner, colWidths=[CONTENT_W-4], hAlign="LEFT")
+    t.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),tint),
+        ("LINEABOVE",(0,0),(-1,0),2.4,edge),("BOX",(0,0),(-1,-1),0.6,LINE),
+        ("LEFTPADDING",(0,0),(-1,-1),13),("RIGHTPADDING",(0,0),(-1,-1),13),
+        ("TOPPADDING",(0,0),(0,0),11),("BOTTOMPADDING",(0,0),(0,0),0),
+        ("TOPPADDING",(0,1),(0,1),0),("BOTTOMPADDING",(0,1),(0,1),2),
+        ("TOPPADDING",(0,2),(0,2),0),("BOTTOMPADDING",(0,2),(-1,-1),12)]))
+    return t
+
+# ---------- build ----------
+def build():
+    doc = BaseDocTemplate(OUT, pagesize=LETTER, leftMargin=MARGIN, rightMargin=MARGIN,
+                          topMargin=MARGIN, bottomMargin=0.78*inch,
+                          title="MaaS360 Expedition — Guide for Managers", author="MaaS360 Expedition")
+    doc.addPageTemplates([PageTemplate(id="main",
+        frames=[Frame(MARGIN, 0.78*inch, CONTENT_W, PAGE_H-MARGIN-0.78*inch, id="f")],
+        onPage=on_page)])
+    s = []
+
+    s += [
+      section_header("GUIDE FOR MANAGERS", "Editing and running the site",
+        "Managers can change the training content directly in the browser, adjust anyone's "
+        "schedule, and control the reminder emails. None of it requires code, and changes go "
+        "live for everyone immediately.", GOLDBG, GOLD),
+      Spacer(1, 12),
+
+      P("Editing a task", "h2"),
+      P("Sign in as a manager and open any task page. A <b>Edit this task</b> button appears "
+        "in the bottom-right corner; it opens a panel of plain text boxes.", "body"),
+      table([
+        ["You can change", "How"],
+        ["Task title and description", "Type in the boxes at the top."],
+        ["Learn cards", "Edit the title and body of any card. Use the buttons to add a card, "
+                        "delete one, or move it up and down. Plain text is formatted into "
+                        "paragraphs automatically."],
+        ["Practice steps", "One step per line in a single box."],
+        ["Video or walkthrough", "Paste any hosted link into the embed box — a YouTube embed "
+                                 "link, a Box or SharePoint document, an internal page. The "
+                                 "checkbox below shows or hides that section entirely."],
+        ["Quiz", "Each question is a box; each answer option is a row with a circle beside it. "
+                 "Click the circle next to the correct answer. Buttons add or remove options "
+                 "and questions."],
+        ["Apply scenario", "Type in the box at the bottom."],
+      ], [1.55*inch, CONTENT_W-1.55*inch]),
+      Spacer(1, 8),
+      P("<b>Save for everyone</b> publishes the change — every user sees it the next time they "
+        "open the page. <b>Revert to built-in</b> removes your edits for that task and restores "
+        "the original. Edits are per task, so changing one never affects another.", "body"),
+      callout("The site will not let you publish a broken quiz",
+              "Saving is blocked, with a plain-English message, if a question has no text, a "
+              "multiple-choice question has fewer than two options, or no correct answer is "
+              "marked. Blank options are dropped automatically.", BLUEBG, BLUE),
+
+      P("Managing people and schedules", "h2"),
+      P("The <b>Manager Dashboard</b> is linked in the sidebar. It has four tabs.", "body"),
+      table([
+        ["Tab", "What it does"],
+        ["Team", "Every employee with their phase progress. Click <b>Timeline</b> on anyone to "
+                 "set their start, due and midweek dates from date pickers, or use "
+                 "<b>Postpone remaining by a week</b> to shift everything unfinished at once."],
+        ["People", "Names, emails, roles, and which manager each person's alerts go to."],
+        ["Alerts", "The reminder rules: on/off, days, time, who receives them, and the message "
+                   "wording. Click a variable chip to insert a value like the person's name."],
+        ["Email log", "Every email the system sent, with any errors."],
+      ], [0.95*inch, CONTENT_W-0.95*inch]),
+      Spacer(1, 7),
+      P("<b>Opening a phase early.</b> Phases normally unlock in order, but in the Timeline "
+        "view each phase has an <b>Unlocked</b> tick box — tick it and that phase opens for "
+        "that person immediately, whether or not the previous one is finished. "
+        "Each phase is independent, so you can open just one. <b>Unlock all phases</b> is "
+        "there if you want the lot. At the top of the Team tab, <b>Your own access</b> gives "
+        "you the same per-phase control over your own account — click any phase to open it "
+        "for yourself, which is how you look ahead to review or edit later content.", "body"),
+      Spacer(1, 9),
+
+      KeepTogether([
+        P("Making someone a manager", "h2"),
+        P("<b>Normally:</b> Dashboard → <b>People</b> tab → change their <b>Role</b> to "
+          "<i>manager</i> → Save. They see the dashboard next time they reload.", "body"),
+        P("<b>If no manager account exists yet</b> — the first one, or if every manager has "
+          "left — promote directly in the database instead:", "body"),
+        Spacer(1, 2),
+        N(1, "Have the person create a normal account on the site first."),
+        N(2, "Open your Supabase project and choose <b>SQL Editor</b> → <b>New query</b>."),
+        N(3, "Paste the line below, replacing the email with theirs, and press <b>Run</b>."),
+        Spacer(1, 4),
+        code("update public.profiles set role = 'manager' where email = 'someone@ibm.com';"),
+        Spacer(1, 5),
+        P("<b>UPDATE 1</b> means it worked — they reload the site and the dashboard appears. "
+          "<b>UPDATE 0</b> means no account matched that email; check the spelling, or that "
+          "they finished creating the account.", "body"),
+      ]),
+      Spacer(1, 9),
+
+      KeepTogether([
+        P("Common manager questions", "h2"),
+        table([
+          ["Question", "Answer"],
+          ["Will my edits be lost when the site is updated?",
+           "No. Browser edits live in the database and take precedence over the built-in "
+           "content, per task, until someone clicks Revert to built-in."],
+          ["Can I add a brand-new task or phase?",
+           "Not from the browser — that is a file change. Ask whoever maintains the site."],
+          ["Someone finished a phase but their manager got no email.",
+           "Check the Email log tab for errors, and that the person's manager email is set on "
+           "the People tab."],
+          ["Can employees see each other's progress?",
+           "No. Employees see only their own; managers see everyone."],
+        ], [2.05*inch, CONTENT_W-2.05*inch]),
+      ]),
+      Spacer(1, 12),
+      KeepTogether([
+        P("One-time database setup", "h2"),
+        P("Two features depend on database pieces that are added by running a file once in "
+          "Supabase. If a feature below errors for you, this is almost always why.", "body"),
+        table([
+          ["If this doesn't work", "Run this file once", "Where"],
+          ["Saving an edit in <b>Edit this task</b>",
+           "supabase/content-overrides.sql", "Supabase → SQL Editor → New query"],
+          ["The <b>Unlocked</b> tick boxes and phase chips",
+           "supabase/migrate-unlock.sql", "Supabase → SQL Editor → New query"],
+        ], [2.1*inch, 2.0*inch, CONTENT_W-4.1*inch]),
+        Spacer(1, 6),
+        P("Open the file from the project folder, copy all of it, paste into a fresh query and "
+          "press Run. Both are safe to run more than once, so there is no harm in re-running "
+          "one if you are unsure.", "body"),
+      ]),
+      Spacer(1, 12),
+      KeepTogether([
+        P("Manager quick reference", "h2"),
+        table([
+          ["To do this", "Go here"],
+          ["Reword a task, add a Learn card, change a quiz",
+           "The task page itself → Edit this task"],
+          ["Add a video or document to a task",
+           "Edit this task → the embed link box"],
+          ["Undo your edits to one task",
+           "Edit this task → Revert to built-in"],
+          ["Change someone's due dates",
+           "Dashboard → Team → Timeline"],
+          ["Push everything back a week for one person",
+           "Dashboard → Team → Postpone remaining by a week"],
+          ["Change when reminder emails go out, or their wording",
+           "Dashboard → Alerts"],
+          ["Check whether an email actually sent",
+           "Dashboard → Email log"],
+          ["Make someone a manager",
+           "Dashboard → People → Role (or the SQL above)"],
+          ["Open a locked phase for someone (or yourself)",
+           "Dashboard → Team → Timeline → Unlocked"],
+        ], [2.75*inch, CONTENT_W-2.75*inch]),
+      ]),
+    ]
+
+
+    doc.build(s)
+    print("wrote", os.path.abspath(OUT))
+
+if __name__ == "__main__":
+    build()

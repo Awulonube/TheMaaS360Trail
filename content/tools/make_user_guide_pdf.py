@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-"""make_guide_pdf.py — builds MaaS360-Expedition-Guide.pdf
+"""make_user_guide_pdf.py — builds MaaS360-Expedition-Guide-Employees.pdf
 
-A use guide in two dedicated sections:
-  Section 1 — for new hires (using the site)
-  Section 2 — for managers (editing the site, managing people)
+The new-hire guide: signing in, working through tasks, phases and reminders.
 
 All prose flows through ReportLab's layout engine and every diagram box is
 sized from measured text, so nothing can clip or overflow.
 
     pip install reportlab      (once)
-    python3 content/tools/make_guide_pdf.py
+    python3 content/tools/make_user_guide_pdf.py
 """
 import os
 from reportlab.lib.pagesizes import LETTER
@@ -23,7 +21,7 @@ from reportlab.platypus import (BaseDocTemplate, PageTemplate, Frame, Paragraph,
                                 KeepTogether)
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
-OUT = os.path.join(ROOT, "MaaS360-Expedition-Guide.pdf")
+OUT = os.path.join(ROOT, "MaaS360-Expedition-Guide-Employees.pdf")
 
 NAVY   = colors.HexColor("#0f1a3d")
 INK    = colors.HexColor("#1c2440")
@@ -72,7 +70,7 @@ CONTENT_W = PAGE_W - 2 * MARGIN
 def on_page(canv, doc):
     canv.saveState()
     canv.setFont(F, 7.8); canv.setFillColor(DIM)
-    canv.drawString(MARGIN, 0.46 * inch, "MaaS360 Expedition — Use Guide")
+    canv.drawString(MARGIN, 0.46 * inch, "MaaS360 Expedition — Guide for New Hires")
     canv.drawRightString(PAGE_W - MARGIN, 0.46 * inch, "Page %d" % doc.page)
     canv.setStrokeColor(LINE); canv.setLineWidth(0.5)
     canv.line(MARGIN, 0.62 * inch, PAGE_W - MARGIN, 0.62 * inch)
@@ -175,15 +173,14 @@ def section_header(kicker, title, blurb, tint, edge):
 def build():
     doc = BaseDocTemplate(OUT, pagesize=LETTER, leftMargin=MARGIN, rightMargin=MARGIN,
                           topMargin=MARGIN, bottomMargin=0.78*inch,
-                          title="MaaS360 Expedition — Use Guide", author="MaaS360 Expedition")
+                          title="MaaS360 Expedition — Guide for New Hires", author="MaaS360 Expedition")
     doc.addPageTemplates([PageTemplate(id="main",
         frames=[Frame(MARGIN, 0.78*inch, CONTENT_W, PAGE_H-MARGIN-0.78*inch, id="f")],
         onPage=on_page)])
     s = []
 
-    # ===================== SECTION 1 — NEW HIRES =====================
     s += [
-      section_header("SECTION 1 OF 2 — FOR NEW HIRES", "Using the Expedition",
+      section_header("GUIDE FOR NEW HIRES", "Using the Expedition",
         "Everything you need, in the order you will need it. The site is a nine-phase "
         "onboarding programme; you work through it in order and it remembers exactly "
         "where you are.", BLUEBG, BLUE),
@@ -269,127 +266,8 @@ def build():
           ["Sidebar footer", "Who you are signed in as, and the sign-out link."],
         ], [1.55*inch, CONTENT_W-1.55*inch]),
       ]),
-      PageBreak(),
     ]
 
-    # ===================== SECTION 2 — MANAGERS =====================
-    s += [
-      section_header("SECTION 2 OF 2 — FOR MANAGERS", "Editing and running the site",
-        "Managers can change the training content directly in the browser, adjust anyone's "
-        "schedule, and control the reminder emails. None of it requires code, and changes go "
-        "live for everyone immediately.", GOLDBG, GOLD),
-      Spacer(1, 12),
-
-      P("Editing a task", "h2"),
-      P("Sign in as a manager and open any task page. A <b>Edit this task</b> button appears "
-        "in the bottom-right corner; it opens a panel of plain text boxes.", "body"),
-      table([
-        ["You can change", "How"],
-        ["Task title and description", "Type in the boxes at the top."],
-        ["Learn cards", "Edit the title and body of any card. Use the buttons to add a card, "
-                        "delete one, or move it up and down. Plain text is formatted into "
-                        "paragraphs automatically."],
-        ["Practice steps", "One step per line in a single box."],
-        ["Video or walkthrough", "Paste any hosted link into the embed box — a YouTube embed "
-                                 "link, a Box or SharePoint document, an internal page. The "
-                                 "checkbox below shows or hides that section entirely."],
-        ["Quiz", "Each question is a box; each answer option is a row with a circle beside it. "
-                 "Click the circle next to the correct answer. Buttons add or remove options "
-                 "and questions."],
-        ["Apply scenario", "Type in the box at the bottom."],
-      ], [1.55*inch, CONTENT_W-1.55*inch]),
-      Spacer(1, 8),
-      P("<b>Save for everyone</b> publishes the change — every user sees it the next time they "
-        "open the page. <b>Revert to built-in</b> removes your edits for that task and restores "
-        "the original. Edits are per task, so changing one never affects another.", "body"),
-      callout("The site will not let you publish a broken quiz",
-              "Saving is blocked, with a plain-English message, if a question has no text, a "
-              "multiple-choice question has fewer than two options, or no correct answer is "
-              "marked. Blank options are dropped automatically.", BLUEBG, BLUE),
-
-      P("Managing people and schedules", "h2"),
-      P("The <b>Manager Dashboard</b> is linked in the sidebar. It has four tabs.", "body"),
-      table([
-        ["Tab", "What it does"],
-        ["Team", "Every employee with their phase progress. Click <b>Timeline</b> on anyone to "
-                 "set their start, due and midweek dates from date pickers, or use "
-                 "<b>Postpone remaining by a week</b> to shift everything unfinished at once."],
-        ["People", "Names, emails, roles, and which manager each person's alerts go to."],
-        ["Alerts", "The reminder rules: on/off, days, time, who receives them, and the message "
-                   "wording. Click a variable chip to insert a value like the person's name."],
-        ["Email log", "Every email the system sent, with any errors."],
-      ], [0.95*inch, CONTENT_W-0.95*inch]),
-      Spacer(1, 7),
-      P("<b>Opening a phase early.</b> Phases normally unlock in order, but in the Timeline "
-        "view each phase has an <b>Unlocked</b> tick box — tick it and that phase opens for "
-        "that person immediately, whether or not the previous one is finished. "
-        "Each phase is independent, so you can open just one. <b>Unlock all phases</b> is "
-        "there if you want the lot. At the top of the Team tab, <b>Your own access</b> gives "
-        "you the same per-phase control over your own account — click any phase to open it "
-        "for yourself, which is how you look ahead to review or edit later content.", "body"),
-      Spacer(1, 9),
-
-      KeepTogether([
-        P("Making someone a manager", "h2"),
-        P("<b>Normally:</b> Dashboard → <b>People</b> tab → change their <b>Role</b> to "
-          "<i>manager</i> → Save. They see the dashboard next time they reload.", "body"),
-        P("<b>If no manager account exists yet</b> — the first one, or if every manager has "
-          "left — promote directly in the database instead:", "body"),
-        Spacer(1, 2),
-        N(1, "Have the person create a normal account on the site first."),
-        N(2, "Open your Supabase project and choose <b>SQL Editor</b> → <b>New query</b>."),
-        N(3, "Paste the line below, replacing the email with theirs, and press <b>Run</b>."),
-        Spacer(1, 4),
-        code("update public.profiles set role = 'manager' where email = 'someone@ibm.com';"),
-        Spacer(1, 5),
-        P("<b>UPDATE 1</b> means it worked — they reload the site and the dashboard appears. "
-          "<b>UPDATE 0</b> means no account matched that email; check the spelling, or that "
-          "they finished creating the account.", "body"),
-      ]),
-      Spacer(1, 9),
-
-      KeepTogether([
-        P("Common manager questions", "h2"),
-        table([
-          ["Question", "Answer"],
-          ["Will my edits be lost when the site is updated?",
-           "No. Browser edits live in the database and take precedence over the built-in "
-           "content, per task, until someone clicks Revert to built-in."],
-          ["Can I add a brand-new task or phase?",
-           "Not from the browser — that is a file change. Ask whoever maintains the site."],
-          ["Someone finished a phase but their manager got no email.",
-           "Check the Email log tab for errors, and that the person's manager email is set on "
-           "the People tab."],
-          ["Can employees see each other's progress?",
-           "No. Employees see only their own; managers see everyone."],
-        ], [2.05*inch, CONTENT_W-2.05*inch]),
-      ]),
-      Spacer(1, 12),
-      KeepTogether([
-        P("Manager quick reference", "h2"),
-        table([
-          ["To do this", "Go here"],
-          ["Reword a task, add a Learn card, change a quiz",
-           "The task page itself → Edit this task"],
-          ["Add a video or document to a task",
-           "Edit this task → the embed link box"],
-          ["Undo your edits to one task",
-           "Edit this task → Revert to built-in"],
-          ["Change someone's due dates",
-           "Dashboard → Team → Timeline"],
-          ["Push everything back a week for one person",
-           "Dashboard → Team → Postpone remaining by a week"],
-          ["Change when reminder emails go out, or their wording",
-           "Dashboard → Alerts"],
-          ["Check whether an email actually sent",
-           "Dashboard → Email log"],
-          ["Make someone a manager",
-           "Dashboard → People → Role (or the SQL above)"],
-          ["Open a locked phase for someone (or yourself)",
-           "Dashboard → Team → Timeline → Unlocked"],
-        ], [2.75*inch, CONTENT_W-2.75*inch]),
-      ]),
-    ]
 
     doc.build(s)
     print("wrote", os.path.abspath(OUT))
