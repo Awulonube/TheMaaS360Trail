@@ -11,11 +11,10 @@
      so this page still feels like part of the Expedition.
      =================================================================== */
   :root {
-    /* deep violet dusk — darker, heavier on purple */
-    --sky-top:#0e0820; --sky-mid:#2a1240; --sky-low:#4d1c4e; --sky-glow:#7c2b4e;
-    --r1:#7b3357; --r2:#5f2a4f; --r3:#4a2247; --r4:#371a3b; --r5:#26142e; --r6:#170d21;
-    --gold:#fbbf24; --navy:#0a1130; --card:rgba(12,7,24,.88);
-    --text:#f3ecf7; --dim:#b3a2c4; --line:rgba(243,236,247,.14);
+    --sky-top:#2b1c46; --sky-mid:#7a2f56; --sky-low:#c85a3f; --sky-glow:#f2a25c;
+    --r1:#f0895a; --r2:#c85f4a; --r3:#9c4550; --r4:#6e3350; --r5:#472a4b; --r6:#2e1f3f;
+    --gold:#fbbf24; --navy:#0a1130; --card:rgba(20,14,36,.82);
+    --text:#f7efe6; --dim:#c9b6ba; --line:rgba(247,239,230,.16);
     --ok:#5ecfa0; --no:#ff8f6b;
     --radius:16px;
   }
@@ -33,8 +32,7 @@
     display:block; will-change:transform; }
   .layer { transition:transform .9s cubic-bezier(.2,.7,.3,1); }
   #haze { position:fixed; inset:0; z-index:1; pointer-events:none;
-    background:radial-gradient(1200px 620px at 72% 80%, rgba(124,43,78,.22), transparent 64%),
-                radial-gradient(900px 500px at 20% 15%, rgba(20,8,38,.55), transparent 70%); }
+    background:radial-gradient(1200px 600px at 72% 78%, rgba(242,162,92,.20), transparent 62%); }
 
   /* ---------- card ---------- */
   .auth { position:relative; z-index:2; width:min(420px,92vw); }
@@ -46,7 +44,7 @@
   .card {
     background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
     padding:22px 24px 24px; backdrop-filter:blur(14px);
-    box-shadow:0 26px 70px rgba(6,2,14,.66); animation:rise .7s .08s ease both;
+    box-shadow:0 24px 60px rgba(20,8,24,.5); animation:rise .7s .08s ease both;
   }
   @keyframes rise { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
 
@@ -136,14 +134,14 @@
         <stop offset="1" stop-color="var(--sky-glow)"/>
       </linearGradient>
       <radialGradient id="sunGlow" cx="0.5" cy="0.5" r="0.5">
-        <stop offset="0" stop-color="#f0a35f" stop-opacity="0.42"/>
-        <stop offset="1" stop-color="#f0a35f" stop-opacity="0"/>
+        <stop offset="0" stop-color="#ffd9a0" stop-opacity="0.85"/>
+        <stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/>
       </radialGradient>
     </defs>
 
     <rect width="1200" height="800" fill="url(#sky)"/>
-    <circle cx="880" cy="486" r="250" fill="url(#sunGlow)"/>
-    <circle cx="880" cy="486" r="52" fill="#f6b877" opacity="0.72"/>
+    <circle cx="880" cy="470" r="230" fill="url(#sunGlow)"/>
+    <circle cx="880" cy="470" r="62" fill="#ffdca6" opacity="0.95"/>
 
     <!-- receding ridgelines: far → near -->
     <g class="layer" data-depth="2">
@@ -163,7 +161,7 @@
         <rect x="-15" y="52" width="30" height="1.8" fill="var(--r2)"/>
         <rect x="-11" y="-16" width="22" height="17" fill="var(--r2)"/>
         <path d="M-14,-16 L0,-25 L14,-16 Z" fill="var(--r2)"/>
-        <rect x="-7" y="-12" width="14" height="9" fill="#ffc98a" opacity="0.95"/>
+        <rect x="-7" y="-12" width="14" height="9" fill="#ffd79f" opacity="0.92"/>
         <line x1="-11" y1="52" x2="-4" y2="1" stroke="var(--r2)" stroke-width="1.4"/>
         <line x1="11" y1="52" x2="4" y2="1" stroke="var(--r2)" stroke-width="1.4"/>
       </g>
