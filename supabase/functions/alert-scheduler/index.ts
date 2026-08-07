@@ -155,18 +155,18 @@ Deno.serve(async (_req) => {
       }
     }
 
-    if (rule.rule_type === "midweek" || rule.rule_type === "overdue") {
+    if (rule.rule_type === "midway" || rule.rule_type === "overdue") {
       for (const t of (timelines || []).filter(t => t.started_at && !t.completed_at)) {
         const emp = (profiles || []).find(p => p.id === t.user_id);
         if (!emp) continue;
         const started = new Date(t.started_at).getTime();
         const dueAt = started + t.duration_days * 86400000;
-        const midAt = started + t.midweek_days * 86400000;
-        const inWindow = rule.rule_type === "midweek"
+        const midAt = started + t.midway_days * 86400000;
+        const inWindow = rule.rule_type === "midway"
           ? (now.getTime() >= midAt && now.getTime() < dueAt)
           : (now.getTime() >= dueAt);
         if (!inWindow) continue;
-        const stampField = rule.rule_type === "midweek" ? "midweek_notified_at" : "overdue_notified_at";
+        const stampField = rule.rule_type === "midway" ? "midway_notified_at" : "overdue_notified_at";
         if (rule.repeat_policy === "once_per_phase" && t[stampField]) continue;
         const done = phaseDone[t.user_id]?.[t.phase_id] || 0;
         const total = phaseTotal[t.user_id]?.[t.phase_id] || 0;

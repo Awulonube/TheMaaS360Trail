@@ -31,6 +31,11 @@
   // essentials and phase1 are never locked.
   function isPhaseLocked(phaseId, allPhasesMap) {
     if (phaseId === "essentials" || phaseId === "phase1") return false;
+    // A manager can open any phase early; that override wins over the
+    // normal "finish the previous phase" rule.
+    if (window.Profile && Profile.getTiming) {
+      try { if (Profile.getTiming(phaseId).forceUnlocked) return false; } catch (e) {}
+    }
     var idx = PHASE_ORDER.indexOf(phaseId);
     if (idx <= 0) return false;
     var prev = PHASE_ORDER[idx - 1];

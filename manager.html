@@ -77,6 +77,7 @@
   .var-chip:hover { border-color: var(--color-accent-blue); }
   .gate { max-width: 480px; margin: 12vh auto; text-align: center; }
   .empty { color: var(--color-text-dim); font-size: 13.5px; padding: 20px 4px; }
+  .unlock-box { width: 16px; height: 16px; accent-color: var(--color-trail-green); cursor: pointer; }
 </style>
 </head>
 <body data-phase="manager" style="display:block">
@@ -93,7 +94,7 @@
   var PHASES = ["essentials","phase1","phase2","phase3","phase4","phase5","phase6","phase7","phase8"];
   var PHASE_SHORT = { essentials:"S0", phase1:"P1", phase2:"P2", phase3:"P3", phase4:"P4", phase5:"P5", phase6:"P6", phase7:"P7", phase8:"P8" };
   var PHASE_NAME = { essentials:"Essentials", phase1:"Basecamp", phase2:"Acclimation", phase3:"Ascent", phase4:"High Camp", phase5:"Summit Push", phase6:"Summit", phase7:"Expedition Lead", phase8:"Peak Certified" };
-  var RULE_TYPES = { digest:"Progress digest", midweek:"Midweek reminder", overdue:"Overdue alert", phase_complete:"Phase completion", custom:"Custom message" };
+  var RULE_TYPES = { digest:"Progress digest", midway:"Midway reminder", overdue:"Overdue alert", phase_complete:"Phase completion", custom:"Custom message" };
   var DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   var VARS = [["name","Name"],["phase","Phase"],["percent","% done"],["due","Due date"],["days_left","Days left"]];
 
@@ -236,9 +237,30 @@
     wire();
   }
 
+  function selfCard() {
+    var mine = PHASES.filter(function (pid) {
+      var t = timelineOf(me.id, pid); return t && t.force_unlocked;
+    }).length;
+    return '<div class="rule-card" style="margin-bottom:18px">' +
+      '<div class="rule-head">' +
+        '<b>Your own access</b>' +
+        '<span class="rule-when">' + (mine
+            ? mine + ' phase' + (mine === 1 ? '' : 's') + ' manually unlocked for you'
+            : 'You follow the normal unlock order') + '</span>' +
+        '<div class="rule-tools">' +
+          '<button class="btn-small" data-unlock-all="'+me.id+'">🔓 Unlock everything for me</button>' +
+          '<button class="btn-small" data-lock-all="'+me.id+'">🔒 Reset to normal</button>' +
+          '<span class="save-status" id="st-'+me.id+'"></span>' +
+        '</div>' +
+      '</div>' +
+      '<p class="hint" style="font-size:11.5px;margin:8px 0 0">Managers often need to look ahead at any phase to review or edit its content. This opens every phase for your own account without affecting anyone else.</p>' +
+      '</div>';
+  }
+
   function teamPanel(emps) {
-    if (!emps.length) return '<p class="empty">No employees yet — they appear here after creating an account on the sign-in page.</p>';
-    return emps.map(function (e) {
+    var head = selfCard();
+    if (!emps.length) return head + '<p class="empty">No employees yet — they appear here after creating an account on the sign-in page.</p>';
+    return head + emps.map(function (e) {
       var cur = currentPhase(e.id);
       var bars = PHASES.map(function(pid){
         var pct = phasePct(e.id,pid);
@@ -248,17 +270,22 @@
       var rows = PHASES.map(function(pid){
         var t = timelineOf(e.id,pid) || {};
         var dur = t.duration_days != null ? t.duration_days : 7;
-        var mid = t.midweek_days != null ? t.midweek_days : 3.5;
+        var mid = t.midway_days != null ? t.midway_days : 3.5;
         var dueVal = plusDays(t.started_at, dur);
         var midVal = plusDays(t.started_at, mid);
         // flag rows that are past due and unfinished
         var late = t.started_at && !t.completed_at &&
                    now > new Date(t.started_at).getTime() + dur * DAY;
+        var always = (pid === "essentials" || pid === "phase1");
         return '<tr'+(late?' class="dash-row overdue"':'')+'>' +
           '<td>'+PHASE_SHORT[pid]+' · '+PHASE_NAME[pid]+'</td><td>'+phasePct(e.id,pid)+'%</td>' +
           '<td><input class="mini-input" type="date" data-emp="'+e.id+'" data-phase="'+pid+'" data-k="start" value="'+dstr(t.started_at)+'"></td>' +
           '<td><input class="mini-input" type="date" data-emp="'+e.id+'" data-phase="'+pid+'" data-k="due" value="'+dueVal+'"'+(t.started_at?'':' disabled title="Set a start date first"')+'></td>' +
           '<td><input class="mini-input" type="date" data-emp="'+e.id+'" data-phase="'+pid+'" data-k="mid" value="'+midVal+'"'+(t.started_at?'':' disabled')+'></td>' +
+          '<td style="text-align:center">' + (always
+              ? '<span class="hint" style="margin:0" title="Always open">always</span>'
+              : '<input type="checkbox" class="unlock-box" data-unlock="'+e.id+':'+pid+'"'+(t.force_unlocked?' checked':'')+' title="Open this phase early, without finishing the previous one">') +
+          '</td>' +
           '<td>'+(t.completed_at ? '<span class="tag">'+fmtD(t.completed_at)+'</span>' : (late?'<span class="tag late">overdue</span>':'—'))+'</td></tr>';
       }).join("");
       return '<div class="emp-row">' +
@@ -271,14 +298,16 @@
         '</div>' +
         '<div class="emp-detail'+(openDetail[e.id]?" on":"")+'" id="det-'+e.id+'">' +
           '<div class="dash-scroll"><table class="dash-table">' +
-          '<thead><tr><th>Phase</th><th>%</th><th>Start date</th><th>Due date</th><th>Midweek check-in</th><th>Completed</th></tr></thead>' +
+          '<thead><tr><th>Phase</th><th>%</th><th>Start date</th><th>Due date</th><th>Midway check-in</th><th style="text-align:center">Unlocked</th><th>Completed</th></tr></thead>' +
           '<tbody>'+rows+'</tbody></table></div>' +
           '<div class="btn-row" style="margin-top:10px;align-items:center">' +
             '<button class="btn-small" data-save-emp="'+e.id+'">💾 Save dates</button>' +
             '<button class="btn-small" data-shift-emp="'+e.id+'" title="Push every unfinished phase back by 7 days">↷ Postpone remaining by a week</button>' +
+            '<button class="btn-small" data-unlock-all="'+e.id+'">🔓 Unlock all phases</button>' +
+            '<button class="btn-small" data-lock-all="'+e.id+'">🔒 Re-lock all</button>' +
             '<span class="save-status" id="st-'+e.id+'"></span>' +
           '</div>' +
-          '<p class="hint" style="font-size:11.5px">Due dates drive the overdue alerts; the midweek check-in date drives the midweek reminder. Changing a date reschedules that phase\'s emails automatically.</p>' +
+          '<p class="hint" style="font-size:11.5px">Due dates drive the overdue alerts; the midway check-in date drives the midway reminder. Ticking <b>Unlocked</b> opens a phase immediately, without needing the previous one finished — useful for prior experience or working out of order. Unlock changes save straight away.</p>' +
         '</div>' +
       '</div>';
     }).join("");
@@ -391,7 +420,7 @@
           var startedIso = startStr ? new Date(startStr+"T09:00:00").toISOString() : null;
 
           var dur = existing.duration_days != null ? existing.duration_days : 7;
-          var mid = existing.midweek_days != null ? existing.midweek_days : 3.5;
+          var mid = existing.midway_days != null ? existing.midway_days : 3.5;
 
           if (startedIso) {
             if (dueStr) {
@@ -401,8 +430,8 @@
             }
             if (midStr) {
               var m = daysBetween(startedIso, midStr);
-              if (m == null || m <= 0) { problem = problem || (PHASE_SHORT[pid] + ": the midweek date must be after the start date."); return; }
-              if (m > dur) { problem = problem || (PHASE_SHORT[pid] + ": the midweek check-in can't fall after the due date."); return; }
+              if (m == null || m <= 0) { problem = problem || (PHASE_SHORT[pid] + ": the midway date must be after the start date."); return; }
+              if (m > dur) { problem = problem || (PHASE_SHORT[pid] + ": the midway check-in can't fall after the due date."); return; }
               mid = m;
             }
           }
@@ -411,11 +440,12 @@
             user_id: uid, phase_id: pid,
             started_at: startedIso,
             duration_days: dur,
-            midweek_days: mid,
+            midway_days: mid,
             completed_at: existing.completed_at||null,
             complete_notified: existing.complete_notified||false,
+            force_unlocked: existing.force_unlocked||false,
             // a rescheduled phase should be able to alert again
-            midweek_notified_at: null,
+            midway_notified_at: null,
             overdue_notified_at: null,
             updated_at: new Date().toISOString()
           });
@@ -428,6 +458,58 @@
           else load();
         });
       });
+    });
+
+    // Per-phase unlock checkbox — saves immediately.
+    app.querySelectorAll("[data-unlock]").forEach(function (box) {
+      box.addEventListener("change", function () {
+        var parts = box.getAttribute("data-unlock").split(":");
+        var uid = parts[0], pid = parts[1];
+        var t = timelineOf(uid, pid) || {};
+        db.from("phase_timeline").upsert({
+          user_id: uid, phase_id: pid,
+          started_at: t.started_at || null,
+          duration_days: t.duration_days != null ? t.duration_days : 7,
+          midway_days: t.midway_days != null ? t.midway_days : 3.5,
+          completed_at: t.completed_at || null,
+          complete_notified: t.complete_notified || false,
+          force_unlocked: box.checked,
+          updated_at: new Date().toISOString()
+        }).then(function (r) {
+          var st = document.getElementById("st-" + uid);
+          if (r.error) { if (st) { st.textContent = "Error: " + r.error.message; st.className = "save-status no"; } box.checked = !box.checked; }
+          else { if (st) { st.textContent = box.checked ? "Phase unlocked ✓" : "Phase re-locked ✓"; st.className = "save-status ok"; } load(); }
+        });
+      });
+    });
+
+    // Unlock / re-lock every phase for one person (also used for "yourself").
+    function bulkUnlock(uid, on) {
+      var st = document.getElementById("st-" + uid);
+      var ups = PHASES.map(function (pid) {
+        var t = timelineOf(uid, pid) || {};
+        return {
+          user_id: uid, phase_id: pid,
+          started_at: t.started_at || null,
+          duration_days: t.duration_days != null ? t.duration_days : 7,
+          midway_days: t.midway_days != null ? t.midway_days : 3.5,
+          completed_at: t.completed_at || null,
+          complete_notified: t.complete_notified || false,
+          force_unlocked: on,
+          updated_at: new Date().toISOString()
+        };
+      });
+      if (st) { st.textContent = on ? "Unlocking…" : "Re-locking…"; st.className = "save-status ok"; }
+      db.from("phase_timeline").upsert(ups).then(function (r) {
+        if (r.error) { if (st) { st.textContent = "Error: " + r.error.message; st.className = "save-status no"; } }
+        else load();
+      });
+    }
+    app.querySelectorAll("[data-unlock-all]").forEach(function (b) {
+      b.addEventListener("click", function () { bulkUnlock(b.getAttribute("data-unlock-all"), true); });
+    });
+    app.querySelectorAll("[data-lock-all]").forEach(function (b) {
+      b.addEventListener("click", function () { bulkUnlock(b.getAttribute("data-lock-all"), false); });
     });
 
     // Postpone: push every unfinished phase's start (and therefore its due
@@ -447,10 +529,11 @@
             user_id: uid, phase_id: pid,
             started_at: started || null,
             duration_days: t.duration_days != null ? t.duration_days : 7,
-            midweek_days: t.midweek_days != null ? t.midweek_days : 3.5,
+            midway_days: t.midway_days != null ? t.midway_days : 3.5,
             completed_at: t.completed_at || null,
             complete_notified: t.complete_notified || false,
-            midweek_notified_at: null,
+            force_unlocked: t.force_unlocked || false,
+            midway_notified_at: null,
             overdue_notified_at: null,
             updated_at: new Date().toISOString()
           };

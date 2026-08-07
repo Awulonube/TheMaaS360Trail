@@ -96,20 +96,20 @@ Nav.init({ activePage: "setup", allPhasesMap: ALL_PHASES_MAP });
         '<td><span class="dr-chip '+cls+'">'+statusChip+'</span></td>' +
         '<td>'+pct+'%</td>' +
         '<td>'+fmt(s.started)+'</td>' +
-        '<td>'+fmt(s.midweek)+'</td>' +
+        '<td>'+fmt(s.midway)+'</td>' +
         '<td>'+fmt(s.due)+'</td>' +
       '</tr>';
     }).join("");
 
     var note = (window.Cloud && Cloud.enabled && Cloud.user)
       ? 'Dates can be adjusted by your manager; reminders follow this schedule automatically.'
-      : 'Each phase is allotted ~1 week from when it unlocks, with a midweek checkpoint.';
+      : 'Each phase is allotted ~1 week from when it unlocks, with a midway checkpoint.';
 
     return '<div class="setup-card wide">' +
       '<p class="section-head">🗓️ Expedition timeline</p>' +
       '<p class="hint">' + note + '</p>' +
       '<div class="dash-scroll"><table class="dash-table">' +
-        '<thead><tr><th>Phase</th><th>Status</th><th>Progress</th><th>Started</th><th>Midweek</th><th>Due</th></tr></thead>' +
+        '<thead><tr><th>Phase</th><th>Status</th><th>Progress</th><th>Started</th><th>Midway</th><th>Due</th></tr></thead>' +
         '<tbody>'+rows+'</tbody>' +
       '</table></div>' +
     '</div>';
