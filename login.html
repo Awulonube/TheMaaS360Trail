@@ -4,46 +4,242 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sign in · MaaS360 Expedition</title>
-<link rel="stylesheet" href="assets/css/styles.css">
 <style>
-  .login-wrap { max-width: 420px; margin: 8vh auto; padding: 0 18px; }
-  .login-card { background: var(--color-card); border: 1px solid var(--color-line);
-    border-radius: var(--radius); padding: 26px 28px; box-shadow: var(--shadow); }
-  .login-title { font-size: 24px; font-weight: 800; margin: 0 0 4px; }
-  .login-sub { color: var(--color-text-dim); font-size: 14px; margin: 0 0 18px; }
-  .login-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
-  .login-tabs button { flex: 1; background: var(--color-bg-2); color: var(--color-text-dim);
-    border: 1px solid var(--color-line); border-radius: 9px; padding: 8px; cursor: pointer; font-size: 14px; }
-  .login-tabs button.on { background: #1a2660; color: #fff; border-color: var(--color-accent-blue); }
-  .hidden { display: none; }
+  /* ===================================================================
+     Firewatch-inspired sign-in: layered ridgelines, low sun, parallax.
+     Palette bridges Firewatch's warm dusk with the site's navy + gold
+     so this page still feels like part of the Expedition.
+     =================================================================== */
+  :root {
+    --sky-top:#2b1c46; --sky-mid:#7a2f56; --sky-low:#c85a3f; --sky-glow:#f2a25c;
+    --r1:#f0895a; --r2:#c85f4a; --r3:#9c4550; --r4:#6e3350; --r5:#472a4b; --r6:#2e1f3f;
+    --gold:#fbbf24; --navy:#0a1130; --card:rgba(20,14,36,.82);
+    --text:#f7efe6; --dim:#c9b6ba; --line:rgba(247,239,230,.16);
+    --ok:#5ecfa0; --no:#ff8f6b;
+    --radius:16px;
+  }
+  * { box-sizing:border-box; }
+  html,body { height:100%; margin:0; }
+  body {
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--text); overflow:hidden; background:var(--sky-top);
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* ---------- scene ---------- */
+  #scene { position:fixed; inset:0; z-index:0; overflow:hidden; }
+  #scene svg { position:absolute; bottom:0; left:-4%; width:108%; height:100%;
+    display:block; will-change:transform; }
+  .layer { transition:transform .9s cubic-bezier(.2,.7,.3,1); }
+  #haze { position:fixed; inset:0; z-index:1; pointer-events:none;
+    background:radial-gradient(1200px 600px at 72% 78%, rgba(242,162,92,.20), transparent 62%); }
+
+  /* ---------- card ---------- */
+  .auth { position:relative; z-index:2; width:min(420px,92vw); }
+  .brand { text-align:center; margin-bottom:16px; animation:rise .7s ease both; }
+  .brand .mark { font-size:34px; }
+  .brand h1 { margin:4px 0 2px; font-size:23px; font-weight:800; letter-spacing:.2px; }
+  .brand p { margin:0; font-size:13px; color:var(--dim); }
+
+  .card {
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:22px 24px 24px; backdrop-filter:blur(14px);
+    box-shadow:0 24px 60px rgba(20,8,24,.5); animation:rise .7s .08s ease both;
+  }
+  @keyframes rise { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+
+  /* segmented switch */
+  .seg { position:relative; display:grid; grid-template-columns:1fr 1fr; gap:4px;
+    background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:11px;
+    padding:4px; margin-bottom:18px; }
+  .seg button { position:relative; z-index:1; background:none; border:0; cursor:pointer;
+    padding:9px 6px; font-size:13.5px; font-weight:700; color:var(--dim);
+    font-family:inherit; border-radius:8px; transition:color .25s; }
+  .seg button.on { color:#2a1330; }
+  .seg .pill { position:absolute; z-index:0; top:4px; left:4px; height:calc(100% - 8px);
+    width:calc(50% - 4px); background:linear-gradient(180deg,#ffd479,var(--gold));
+    border-radius:8px; transition:transform .34s cubic-bezier(.5,1.4,.4,1);
+    box-shadow:0 4px 14px rgba(251,191,36,.3); }
+  .seg.up .pill { transform:translateX(100%); }
+
+  /* fields */
+  .field { margin-bottom:13px; animation:fadeField .38s ease both; }
+  @keyframes fadeField { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+  .field.collapsing { animation:foldUp .3s ease forwards; }
+  @keyframes foldUp { to{opacity:0;transform:translateY(-8px);height:0;margin:0;overflow:hidden} }
+  label { display:block; font-size:11.5px; font-weight:700; letter-spacing:.05em;
+    text-transform:uppercase; color:var(--dim); margin-bottom:5px; }
+  .wrap-in { position:relative; }
+  input {
+    width:100%; background:rgba(0,0,0,.3); border:1px solid var(--line); color:var(--text);
+    border-radius:10px; padding:11px 40px 11px 13px; font-size:14.5px; font-family:inherit;
+    transition:border-color .2s, box-shadow .2s, background .2s;
+  }
+  input::placeholder { color:rgba(201,182,186,.55); }
+  input:focus { outline:none; border-color:var(--gold); background:rgba(0,0,0,.42);
+    box-shadow:0 0 0 3px rgba(251,191,36,.16); }
+  input.good { border-color:var(--ok); }
+  input.bad  { border-color:var(--no); }
+  .peek { position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    background:none; border:0; cursor:pointer; font-size:15px; opacity:.7; padding:4px 6px; }
+  .peek:hover { opacity:1; }
+  .tick { position:absolute; right:38px; top:50%; transform:translateY(-50%);
+    font-size:14px; opacity:0; transition:opacity .2s; }
+  .tick.show { opacity:1; }
+
+  /* strength meter */
+  .meter { display:flex; gap:4px; margin-top:7px; }
+  .meter i { flex:1; height:3px; border-radius:2px; background:rgba(247,239,230,.16); transition:background .3s; }
+  .meter.s1 i:nth-child(1){background:#ff7a5c}
+  .meter.s2 i:nth-child(-n+2){background:#f0a34a}
+  .meter.s3 i:nth-child(-n+3){background:#e8c964}
+  .meter.s4 i{background:var(--ok)}
+  .meter-note { font-size:11.5px; color:var(--dim); margin-top:5px; min-height:15px; }
+
+  /* button */
+  .go {
+    width:100%; margin-top:6px; padding:12px; border:0; border-radius:11px; cursor:pointer;
+    font-size:15px; font-weight:800; font-family:inherit; color:#2a1330;
+    background:linear-gradient(180deg,#ffd479,var(--gold));
+    box-shadow:0 8px 22px rgba(251,191,36,.28); transition:transform .12s, filter .2s, opacity .2s;
+  }
+  .go:hover { filter:brightness(1.06); }
+  .go:active { transform:translateY(1px); }
+  .go[disabled] { opacity:.6; cursor:default; }
+  .go .spin { display:inline-block; width:13px; height:13px; margin-right:7px;
+    border:2px solid rgba(42,19,48,.3); border-top-color:#2a1330; border-radius:50%;
+    animation:spin .7s linear infinite; vertical-align:-2px; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  .msg { font-size:13px; margin:12px 0 0; min-height:19px; text-align:center; }
+  .msg.ok { color:var(--ok); } .msg.no { color:var(--no); }
+  .foot { text-align:center; margin-top:16px; font-size:12.5px; color:var(--dim); }
+  .foot a { color:var(--gold); text-decoration:none; }
+  .foot a:hover { text-decoration:underline; }
+  .hidden { display:none !important; }
+  @media (prefers-reduced-motion: reduce) {
+    *,*::before,*::after { animation-duration:.001ms !important; transition-duration:.001ms !important; }
+  }
 </style>
 </head>
-<body data-phase="login" style="display:block">
-<div class="login-wrap">
-  <div class="login-card">
-    <p class="login-title">🏔️ MaaS360 Expedition</p>
-    <p class="login-sub">Sign in to sync your progress and unlock your personal timeline.</p>
-    <div class="login-tabs">
-      <button id="tab-in" class="on">Sign in</button>
-      <button id="tab-up">Create account</button>
+<body>
+
+<div id="scene">
+  <svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="var(--sky-top)"/>
+        <stop offset="0.42" stop-color="var(--sky-mid)"/>
+        <stop offset="0.74" stop-color="var(--sky-low)"/>
+        <stop offset="1" stop-color="var(--sky-glow)"/>
+      </linearGradient>
+      <radialGradient id="sunGlow" cx="0.5" cy="0.5" r="0.5">
+        <stop offset="0" stop-color="#ffd9a0" stop-opacity="0.85"/>
+        <stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+
+    <rect width="1200" height="800" fill="url(#sky)"/>
+    <circle cx="880" cy="470" r="230" fill="url(#sunGlow)"/>
+    <circle cx="880" cy="470" r="62" fill="#ffdca6" opacity="0.95"/>
+
+    <!-- receding ridgelines: far → near -->
+    <g class="layer" data-depth="2">
+      <path d="M0,486 L112,430 L208,462 L336,384 L432,430 L560,362 L688,438 L790,404 L918,346 L1046,428 L1200,390 L1200,800 L0,800 Z" fill="var(--r6)" opacity="0.85"/>
+    </g>
+    <g class="layer" data-depth="4">
+      <path d="M0,548 L96,498 L232,442 L360,524 L470,478 L598,404 L742,506 L868,452 L994,516 L1108,470 L1200,506 L1200,800 L0,800 Z" fill="var(--r5)"/>
+    </g>
+    <g class="layer" data-depth="7">
+      <path d="M0,608 L138,544 L266,596 L408,502 L536,578 L662,530 L806,586 L928,512 L1062,590 L1200,548 L1200,800 L0,800 Z" fill="var(--r4)"/>
+    </g>
+    <g class="layer" data-depth="11">
+      <path d="M0,668 L104,626 L246,580 L372,656 L498,600 L640,648 L772,588 L906,564 L1024,642 L1146,606 L1200,634 L1200,800 L0,800 Z" fill="var(--r3)"/>
+      <!-- lookout tower, the Firewatch signature -->
+      <g transform="translate(906,566)">
+        <rect x="-1.6" y="0" width="3.2" height="52" fill="var(--r2)"/>
+        <rect x="-15" y="52" width="30" height="1.8" fill="var(--r2)"/>
+        <rect x="-11" y="-16" width="22" height="17" fill="var(--r2)"/>
+        <path d="M-14,-16 L0,-25 L14,-16 Z" fill="var(--r2)"/>
+        <rect x="-7" y="-12" width="14" height="9" fill="#ffd79f" opacity="0.92"/>
+        <line x1="-11" y1="52" x2="-4" y2="1" stroke="var(--r2)" stroke-width="1.4"/>
+        <line x1="11" y1="52" x2="4" y2="1" stroke="var(--r2)" stroke-width="1.4"/>
+      </g>
+    </g>
+    <g class="layer" data-depth="16">
+      <path d="M0,730 L146,678 L288,720 L430,650 L566,712 L708,662 L858,714 L1002,648 L1128,712 L1200,684 L1200,800 L0,800 Z" fill="var(--r2)"/>
+    </g>
+    <g class="layer" data-depth="22">
+      <path d="M0,800 L0,756 L128,724 L268,762 L412,712 L556,764 L700,706 L838,758 L972,720 L1104,766 L1200,730 L1200,800 Z" fill="var(--r1)"/>
+      <!-- foreground pines -->
+      <g fill="var(--r6)" opacity="0.72">
+        <path d="M96,800 L96,742 M78,760 L96,720 L114,760 Z M82,782 L96,746 L110,782 Z"/>
+        <path d="M162,800 L162,756 M148,770 L162,738 L176,770 Z M151,788 L162,760 L173,788 Z"/>
+        <path d="M1104,800 L1104,748 M1086,766 L1104,728 L1122,766 Z M1090,786 L1104,752 L1118,786 Z"/>
+      </g>
+    </g>
+  </svg>
+</div>
+<div id="haze"></div>
+
+<div class="auth">
+  <div class="brand">
+    <div class="mark">🏔️</div>
+    <h1>MaaS360 Expedition</h1>
+    <p id="tagline">Welcome back to the trail.</p>
+  </div>
+
+  <div class="card">
+    <div class="seg" id="seg">
+      <span class="pill"></span>
+      <button id="tab-in" class="on" type="button">Sign in</button>
+      <button id="tab-up" type="button">Create account</button>
     </div>
-    <div class="field" id="f-name-wrap" style="display:none">
-      <label for="l-name">Full name</label>
-      <input id="l-name" type="text" placeholder="Jordan Rivera">
-    </div>
-    <div class="field"><label for="l-email">Work email</label>
-      <input id="l-email" type="email" placeholder="you@company.com"></div>
-    <div class="field"><label for="l-pass">Password</label>
-      <input id="l-pass" type="password" placeholder="••••••••"></div>
-    <div class="field" id="f-mgr-wrap" style="display:none">
-      <label for="l-mgr">Your manager's email (for notifications)</label>
-      <input id="l-mgr" type="email" placeholder="manager@company.com">
-    </div>
-    <div class="btn-row"><button class="btn-primary" id="go" style="width:100%">Sign in</button></div>
-    <p class="save-status" id="msg"></p>
-    <p class="hint" id="local-note" style="display:none">Cloud sync isn't configured yet — an admin needs to fill in
-      <b>assets/js/cloud-config.js</b>. Until then the site works in local-only mode.
-      <a href="index.html" style="color:var(--color-accent-blue)">Continue without signing in →</a></p>
+
+    <form id="form" autocomplete="on" novalidate>
+      <div class="field hidden" id="f-name-wrap">
+        <label for="l-name">Full name</label>
+        <div class="wrap-in"><input id="l-name" type="text" placeholder="Jordan Rivera" autocomplete="name"></div>
+      </div>
+
+      <div class="field">
+        <label for="l-email">Work email</label>
+        <div class="wrap-in">
+          <input id="l-email" type="email" placeholder="you@ibm.com" autocomplete="username">
+          <span class="tick" id="tick-email">✓</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="l-pass">Password</label>
+        <div class="wrap-in">
+          <input id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+          <button class="peek" type="button" data-peek="l-pass" aria-label="Show password">👁</button>
+        </div>
+        <div class="meter hidden" id="meter"><i></i><i></i><i></i><i></i></div>
+        <p class="meter-note hidden" id="meter-note"></p>
+      </div>
+
+      <div class="field hidden" id="f-confirm-wrap">
+        <label for="l-confirm">Confirm password</label>
+        <div class="wrap-in">
+          <input id="l-confirm" type="password" placeholder="Re-enter your password" autocomplete="new-password">
+          <span class="tick" id="tick-confirm">✓</span>
+          <button class="peek" type="button" data-peek="l-confirm" aria-label="Show password">👁</button>
+        </div>
+        <p class="meter-note" id="match-note"></p>
+      </div>
+
+      <div class="field hidden" id="f-mgr-wrap">
+        <label for="l-mgr">Your manager's email</label>
+        <div class="wrap-in"><input id="l-mgr" type="email" placeholder="manager@ibm.com" autocomplete="email"></div>
+      </div>
+
+      <button class="go" id="go" type="submit">Sign in</button>
+      <p class="msg" id="msg"></p>
+    </form>
+
+    <p class="foot" id="foot"><a href="index.html">Continue without signing in →</a></p>
   </div>
 </div>
 
@@ -51,59 +247,166 @@
 <script src="assets/js/cloud-config.js"></script>
 <script>
 (function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
   var cfg = window.CLOUD_CONFIG || {};
-  var msg = document.getElementById("msg");
-  function say(t, ok) { msg.textContent = t; msg.className = "save-status " + (ok ? "ok" : "no"); }
+  var mode = "in";                       // "in" | "up"
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY || !window.supabase) {
-    document.getElementById("local-note").style.display = "block";
-    document.getElementById("go").disabled = true;
-    return;
+  /* ---------- parallax scene ---------- */
+  (function parallax() {
+    var layers = [].slice.call(document.querySelectorAll(".layer"));
+    var tx = 0, ty = 0;
+    function apply(x, y) {
+      layers.forEach(function (l) {
+        var d = parseFloat(l.getAttribute("data-depth")) || 1;
+        l.style.transform = "translate(" + (x * d) + "px," + (y * d * 0.35) + "px)";
+      });
+    }
+    window.addEventListener("mousemove", function (e) {
+      tx = (e.clientX / window.innerWidth - 0.5) * -1.6;
+      ty = (e.clientY / window.innerHeight - 0.5) * -1.0;
+      apply(tx, ty);
+    });
+    // gentle idle drift so the scene breathes without input
+    var t = 0;
+    setInterval(function () {
+      t += 0.02;
+      apply(tx + Math.sin(t) * 0.5, ty + Math.cos(t * 0.7) * 0.28);
+    }, 90);
+  })();
+
+  /* ---------- dynamic mode switching ---------- */
+  function show(el, on) { el.classList.toggle("hidden", !on); }
+  function setMode(next) {
+    if (next === mode) return;
+    mode = next;
+    $("seg").classList.toggle("up", mode === "up");
+    $("tab-in").classList.toggle("on", mode === "in");
+    $("tab-up").classList.toggle("on", mode === "up");
+
+    var signup = mode === "up";
+    show($("f-name-wrap"), signup);
+    show($("f-confirm-wrap"), signup);
+    show($("f-mgr-wrap"), signup);
+    show($("meter"), signup);
+    show($("meter-note"), signup);
+
+    $("l-pass").setAttribute("autocomplete", signup ? "new-password" : "current-password");
+    $("go").textContent = signup ? "Create account" : "Sign in";
+    $("tagline").textContent = signup ? "Every climb starts with a first step." : "Welcome back to the trail.";
+    say("", true);
+    validate();
   }
-  var client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
-  var mode = "in";
-  var tabIn = document.getElementById("tab-in"), tabUp = document.getElementById("tab-up");
+  $("tab-in").addEventListener("click", function () { setMode("in"); });
+  $("tab-up").addEventListener("click", function () { setMode("up"); });
 
-  function setMode(m) {
-    mode = m;
-    tabIn.classList.toggle("on", m === "in");
-    tabUp.classList.toggle("on", m === "up");
-    document.getElementById("f-name-wrap").style.display = m === "up" ? "" : "none";
-    document.getElementById("f-mgr-wrap").style.display = m === "up" ? "" : "none";
-    document.getElementById("go").textContent = m === "up" ? "Create account" : "Sign in";
+  /* ---------- password reveal ---------- */
+  [].slice.call(document.querySelectorAll(".peek")).forEach(function (b) {
+    b.addEventListener("click", function () {
+      var input = $(b.getAttribute("data-peek"));
+      var showing = input.type === "text";
+      input.type = showing ? "password" : "text";
+      b.textContent = showing ? "👁" : "🙈";
+    });
+  });
+
+  /* ---------- live validation ---------- */
+  function strength(pw) {
+    var s = 0;
+    if (pw.length >= 8) s++;
+    if (pw.length >= 12) s++;
+    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
+    if (/\d/.test(pw) || /[^\w\s]/.test(pw)) s++;
+    return Math.min(s, 4);
   }
-  tabIn.addEventListener("click", function () { setMode("in"); });
-  tabUp.addEventListener("click", function () { setMode("up"); });
+  var STRENGTH_WORDS = ["", "Too short — aim for 8+ characters", "Getting there", "Good", "Strong"];
 
-  document.getElementById("go").addEventListener("click", function () {
-    var email = document.getElementById("l-email").value.trim();
-    var pass = document.getElementById("l-pass").value;
-    if (!email || !pass) return say("Email and password are required.", false);
-    say(mode === "up" ? "Creating account…" : "Signing in…", true);
+  function validate() {
+    var email = $("l-email").value.trim();
+    var pw = $("l-pass").value;
+    var confirm = $("l-confirm").value;
+    var emailOk = EMAIL_RE.test(email);
+    $("tick-email").classList.toggle("show", emailOk);
+    $("l-email").classList.toggle("good", emailOk && email.length > 0);
+    $("l-email").classList.toggle("bad", email.length > 0 && !emailOk);
 
     if (mode === "up") {
-      var name = document.getElementById("l-name").value.trim();
-      var mgr = document.getElementById("l-mgr").value.trim();
-      client.auth.signUp({ email: email, password: pass, options: { data: { full_name: name } } })
+      var s = strength(pw);
+      $("meter").className = "meter s" + s + (pw ? "" : " ");
+      $("meter-note").textContent = pw ? STRENGTH_WORDS[s] : "";
+      var match = confirm.length > 0 && confirm === pw;
+      var mismatch = confirm.length > 0 && confirm !== pw;
+      $("tick-confirm").classList.toggle("show", match);
+      $("l-confirm").classList.toggle("good", match);
+      $("l-confirm").classList.toggle("bad", mismatch);
+      $("match-note").textContent = mismatch ? "Passwords don't match yet" : (match ? "Passwords match" : "");
+      $("match-note").style.color = mismatch ? "var(--no)" : "var(--ok)";
+      $("go").disabled = !(emailOk && pw.length >= 8 && match && $("l-name").value.trim());
+    } else {
+      $("go").disabled = !(emailOk && pw.length > 0);
+    }
+  }
+  ["l-email","l-pass","l-confirm","l-name"].forEach(function (id) {
+    $(id).addEventListener("input", validate);
+  });
+
+  function say(t, ok) {
+    var m = $("msg");
+    m.textContent = t;
+    m.className = "msg " + (t ? (ok ? "ok" : "no") : "");
+  }
+  function busy(on, label) {
+    $("go").disabled = on;
+    $("go").innerHTML = on ? '<span class="spin"></span>' + label : label;
+  }
+
+  /* ---------- auth ---------- */
+  if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY || !window.supabase) {
+    $("go").disabled = true;
+    say("Cloud sync isn't configured yet — an admin needs to fill in assets/js/cloud-config.js.", false);
+    validate = function () {};   // keep the button disabled
+    return;
+  }
+  var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+
+  $("form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var email = $("l-email").value.trim();
+    var pw = $("l-pass").value;
+
+    if (mode === "up") {
+      var name = $("l-name").value.trim();
+      var mgr = $("l-mgr").value.trim();
+      if (!name) return say("Please enter your name.", false);
+      if (pw.length < 8) return say("Use at least 8 characters.", false);
+      if (pw !== $("l-confirm").value) return say("The passwords don't match.", false);
+      if (mgr && !EMAIL_RE.test(mgr)) return say("That manager email looks invalid.", false);
+
+      busy(true, "Creating account…");
+      db.auth.signUp({ email: email, password: pw, options: { data: { full_name: name } } })
         .then(function (res) {
-          if (res.error) return say(res.error.message, false);
+          if (res.error) { busy(false, "Create account"); return say(res.error.message, false); }
           var uid = res.data.user && res.data.user.id;
-          var after = function () {
+          var done = function () {
             if (res.data.session) { location.href = "index.html"; }
-            else say("Account created. Check your email to confirm, then sign in.", true);
+            else { busy(false, "Create account"); say("Account created — check your email to confirm, then sign in.", true); }
           };
           if (uid && res.data.session) {
-            client.from("profiles").update({ full_name: name, manager_email: mgr })
-              .eq("id", uid).then(after, after);
-          } else after();
+            db.from("profiles").update({ full_name: name, manager_email: mgr }).eq("id", uid).then(done, done);
+          } else done();
         });
     } else {
-      client.auth.signInWithPassword({ email: email, password: pass }).then(function (res) {
-        if (res.error) return say(res.error.message, false);
+      busy(true, "Signing in…");
+      db.auth.signInWithPassword({ email: email, password: pw }).then(function (res) {
+        if (res.error) { busy(false, "Sign in"); return say(res.error.message, false); }
+        say("Welcome back — heading to the trailhead…", true);
         location.href = "index.html";
       });
     }
   });
+
+  validate();
 })();
 </script>
 </body>
